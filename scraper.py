@@ -33,6 +33,7 @@ def scraper(url, resp) -> list:
           else:  # since the current char is alphanumeric, for-loop must be on a word; continue adding chars to token
             token += char
 
+        global LONGEST_PAGE
         if LONGEST_PAGE == None:  # this must be the first site crawled over, so this is the longest page found so far
           LONGEST_PAGE = (CURR_PAGE, num_words)  # (page, number of words)
         elif LONGEST_PAGE[1] < num_words:  # otherwise, compare number of words
