@@ -113,12 +113,17 @@ def check_valid_domain(parsed_url) -> bool:
   valid_domains = {"ics.uci.edu",
                    "cs.uci.edu",
                    "informatics.uci.edu",
-                   "stats.uci.edu"}
+                    "stats.uci.edu"
+                    ".ics.uci.edu",
+                    ".cs.uci.edu",
+                     ".informatics.uci.edu",
+                     ".stats.uci.edu"
+                    }
   for domain in valid_domains:
-      if domain not in parsed_url.hostname:
-        return False
-      else:
-        return True
+      if domain in parsed_url.hostname:
+          return True
+
+  return False
 
 def count_subdomains(parsed_url, subdomain_count):
   """Check for the amount of subdomains within a domain."""
