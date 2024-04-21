@@ -10,7 +10,6 @@ def scraper(url, resp):
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
-  # Implementation required.
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
   # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -115,9 +114,11 @@ def check_valid_domain(parsed_url) -> bool:
                    "cs.uci.edu",
                    "informatics.uci.edu",
                    "stats.uci.edu"}
-  if parsed_url.hostname not in valid_domains:
-      return False
-  return True
+  for domain in valid_domains:
+      if domain not in parsed_url.hostname:
+        return False
+      else:
+        return True
 
 def count_subdomains(parsed_url, subdomain_count):
   """Check for the amount of subdomains within a domain."""
