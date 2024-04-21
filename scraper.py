@@ -62,7 +62,7 @@ def extract_next_links(url, resp):
       RAW_RESPONSES.append(resp.raw_response)
       page_content = resp.raw_response.content
       CURR_PAGE = resp.raw_response
-      soup = BS(page_content, 'html_parser')
+      soup = BS(page_content, 'html.parser')
       for soup_url in soup.find_all('a'):
         link = soup_url.get('href')
         if link not in found_links:
