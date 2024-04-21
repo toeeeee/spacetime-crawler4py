@@ -1,5 +1,6 @@
 import re
 from urllib.parse import urlparse
+import urllib.robotparser
 from bs4 import BeautifulSoup as BS
 
 
@@ -77,16 +78,14 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     """Determines if URL is valid for scraping and returns boolean.
     Has side effect of answering questions about the URL for report deliverable. Answers
     will be added to global variables."""
-    robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
 
     try:
         parsed = urlparse(url, allow_fragments = False)  # Breaks the url into parts.
 
-        robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
         if (parsed.scheme not in {"http", "https"} or
                 check_valid_domain(parsed) == False or
                 check_uniqueness(parsed, unique_pages) == False or
-                check_robot_allows(parsed, robot_exclusion) == False):
+                check_robot_file(parsed, url) == False):
             return False
 
         count_subdomains(parsed, subdomain_count)
@@ -126,15 +125,19 @@ def check_valid_domain(parsed_url) -> bool:
   for domain in valid_domains:
       if domain in parsed_url.hostname:
           return True
-
   return False
 
 def count_subdomains(parsed_url, subdomain_count):
   """Check for the amount of subdomains within a domain."""
   for key, value in subdomain_count.items():
-    if key == parsed_url.hostname:
+    if is_subdomain(parsed_url.hostname, key):
       subdomain_count[key] += 1
       break
+
+def is_subdomain(parsed_domain, domain_bank):
+  if domain_bank == parsed_domain:
+    return True
+  return False
 
 def check_uniqueness(parsed_url, unique_pages):
   """Disregard url fragment and return True if unique."""
@@ -148,24 +151,12 @@ def check_uniqueness(parsed_url, unique_pages):
     unique_pages.add(page)
     return True
   
-def parse_for_robot(parsed_url):
-  """converts url to robots.txt and stores robot_exclusion"""
+
+def check_robot_file(parsed_url, url):
   robot_url = parsed_url.scheme + "://" + parsed_url.hostname + "/robots.txt"
-  disallowed_paths = ()
-  '''
-  use robot_url, and download that file
-  gather data from robots.txt
-  '''
-  # Define user_agent
-  # Disallows
-  # Sitemaps
-  
-  # if its under disallowed, store it in disallowed_paths
-
-  return disallowed_paths  # returns list of disallowed paths  
-
-def check_robot_allows(url, robot_exclusion):
-  """checks if the url is not allowed based on robot.txt"""
-  if url in robot_exclusion:
-    return False
-  return True
+  r_parse = urllib.robotparser.RobotFileParser()
+  r_parse.set_url(robot_url)
+  r_parse.read()
+  if r_parse.can_fetch("IR US24 51886940,28685686,62616299,32303304", url):
+    return True
+  return False
