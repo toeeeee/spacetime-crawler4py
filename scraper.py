@@ -6,10 +6,41 @@ from bs4 import BeautifulSoup as BS
 
 CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
 LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
+FREQ_DICT = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
+RAW_RESPONSES = []  # list of raw_responses of sites crawled over
+STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"] # list of words that will not be considered for the top 50 most common words
 
-def scraper(url, resp):
+
+def scraper(url, resp) -> list:
     links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
+    links_list = []
+    for i in range(len(links)):
+      if is_valid(links[i]):  # if link is_valid: append to links_list; check if it's the longest page; and add all of the site's words to FREQ_DICT
+        links_list.append(links[i])
+
+        # add all words on the site to the dictionary and count up number of words
+        page_text = BS(RAW_RESPONSES[i].content, 'html.parser')  # get plain text of html contents of the page
+        token = ""
+        num_words = 0
+        for char in page_text:
+          if not char.isalnum():
+            if token != "":  # continue only if token isn't empty
+              num_words += 1
+              if token not in FREQ_DICT:  # add into FREQ_DICT
+                FREQ_DICT[token] = 0  # if word isn't in dict already, add it in
+              FREQ_DICT[token] += 1  # increment frequency by 1
+              token = ""  # reset token to empty to start reading in the next word
+          else:  # since the current char is alphanumeric, for-loop must be on a word; continue adding chars to token
+            token += char
+
+        if LONGEST_PAGE == None:  # this must be the first site crawled over, so this is the longest page found so far
+          LONGEST_PAGE = (CURR_PAGE, num_words)  # (page, number of words)
+        elif LONGEST_PAGE[1] < num_words:  # otherwise, compare number of words
+          LONGEST_PAGE = (CURR_PAGE, num_words)
+
+    # CREDIT: I looked up how to sort a list of tuples based on the second element of each tuple (https://stackoverflow.com/questions/10695139/sort-a-list-of-tuples-by-2nd-item-integer-value)
+    top_fifty_words = sorted( [(word, freq) for word, freq in FREQ_DICT.items()], key=lambda x: x[1] )[:50]
+    return links_list
 
 def extract_next_links(url, resp):
   # url: the URL that was used to get the page
@@ -28,6 +59,7 @@ def extract_next_links(url, resp):
     else:
       # Get the html content of the page
       # Using BeautifulSoup to parse the html, and then find all the links within it
+      RAW_RESPONSES.append(resp.raw_response)
       page_content = resp.raw_response.content
       CURR_PAGE = resp.raw_response
       soup = BS(page_content, 'html_parser')
@@ -72,39 +104,6 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
         print("TypeError for ", parsed)
         raise
 
-def find_longest_page(page) -> None:  # function given a page's resp.raw_response
-  """
-  Check if given page is longer than LONGEST_PAGE in terms of number of words
-  """
-  if LONGEST_PAGE == None:  # this is the first page crawled over, thus the longest page found so far
-    LONGEST_PAGE = page
-  else:  # else, compare against the current page
-    page_text = BS(page.content, 'html.parser')  # convert
-    CurrPage_text = BS(CURR_PAGE.content, 'html.parser')
-
-    if len(page_text) > len(CurrPage_text):
-      LONGEST_PAGE = page
-  return
-
-def most_common_words(lists_of_words) -> list:  # function given a list of lists, each list containing all the words found from that site
-  """return a list of tuples of the 50 words that appeared most often across all the sites crawled"""
-   
-  word_freq = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
-  # list of words that will not be considered for the top 50 most common words
-  stop_words = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"]
-  
-  for site in lists_of_words:  # iterating over each word of each site's list, increase the word's frequency count by 1 when it's encountered
-    for word in site:
-      if (word not in stop_words) and (word not in word_freq):
-        word_freq[word] = 0
-        word_freq[word] += 1
-
-  # convert the word_freq dict into a list of tuples [(word, freq), ...], order them, then only keep the first 50 elements
-  # CREDIT: I looked up how to sort a list of tuples based on the second element of each tuple (https://stackoverflow.com/questions/10695139/sort-a-list-of-tuples-by-2nd-item-integer-value)
-  top_50_words = sorted( [(word, freq) for word, freq in word_freq.items()], key=lambda x: x[1] )[:50]
-
-  return top_50_words
-
 # Helper methods for is_valid()
 '''
 Defining Uniqueness:
@@ -126,7 +125,7 @@ def check_valid_domain(parsed_url) -> bool:
 def count_subdomains(parsed_url, subdomain_count):
   """Check for the amount of subdomains within a domain."""
   for key, value in subdomain_count.items():
-    if key == parsed_url.hostname:
+    if is_subdomain(parsed_url.hostname, key):
       subdomain_count[key] += 1
       break
 
