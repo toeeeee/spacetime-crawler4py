@@ -11,7 +11,6 @@ def scraper(url, resp):
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
-  # Implementation required.
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
   # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -38,14 +37,28 @@ def extract_next_links(url, resp):
 
   return found_links
 
-def is_valid(url):
-    # Decide whether to crawl this url or not. 
-    # If you decide to crawl it, return True; otherwise return False.
-    # There are already some conditions that return False.
+
+sd_count = {"ics.uci.edu": 0, "cs.uci.edu": 0,
+                   "informatics.uci.edu": 0, "stats.uci.edu": 0}
+u_pages = set()  # Parsed urls
+def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
+    """Determines if URL is valid for scraping and returns boolean.
+    Has side effect of answering questions about the URL for report deliverable. Answers
+    will be added to global variables."""
+    robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
+
     try:
-        parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]):
+        parsed = urlparse(url, allow_fragments = False)  # Breaks the url into parts.
+
+        robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
+        if (parsed.scheme not in {"http", "https"} or
+                check_valid_domain(parsed) == False or
+                check_uniqueness(parsed, unique_pages) == False or
+                check_robot_allows(parsed, robot_exclusion) == False):
             return False
+
+        count_subdomains(parsed, subdomain_count)
+
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
@@ -57,7 +70,7 @@ def is_valid(url):
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
 
     except TypeError:
-        print ("TypeError for ", parsed)
+        print("TypeError for ", parsed)
         raise
 
 def find_longest_page(page) -> None:  # function given a page's resp.raw_response
@@ -97,7 +110,7 @@ def most_common_words(lists_of_words) -> list:  # function given a list of lists
 '''
 Defining Uniqueness:
 - avoid fragment
-http://www.ics.uci.edu#aaa and http://www.ics.uci.edu#bbb are the same URL
+https://www.ics.uci.edu#aaa and https://www.ics.uci.edu#bbb are the same URL
 - ALL pages found, not just ones scraped
 '''
 def check_valid_domain(parsed_url) -> bool:
@@ -106,9 +119,11 @@ def check_valid_domain(parsed_url) -> bool:
                    "cs.uci.edu",
                    "informatics.uci.edu",
                    "stats.uci.edu"}
-  if parsed_url.hostname not in valid_domains:
-      return False
-  return True
+  for domain in valid_domains:
+      if domain not in parsed_url.hostname:
+        return False
+      else:
+        return True
 
 def count_subdomains(parsed_url, subdomain_count):
   """Check for the amount of subdomains within a domain."""
@@ -120,7 +135,7 @@ def count_subdomains(parsed_url, subdomain_count):
 def check_uniqueness(parsed_url, unique_pages):
   """Disregard url fragment and return True if unique."""
   for page in unique_pages:
-    if (parsed_url.schema == page.schema      and
+    if (parsed_url.scheme == page.scheme      and
         parsed_url.hostname == page.hostname  and
         parsed_url.path == page.path          and
         parsed_url.params == page.params      and
