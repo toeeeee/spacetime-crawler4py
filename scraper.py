@@ -126,15 +126,19 @@ def check_valid_domain(parsed_url) -> bool:
   for domain in valid_domains:
       if domain in parsed_url.hostname:
           return True
-
   return False
 
 def count_subdomains(parsed_url, subdomain_count):
   """Check for the amount of subdomains within a domain."""
   for key, value in subdomain_count.items():
-    if key == parsed_url.hostname:
+    if is_subdomain(parsed_url.hostname, key):
       subdomain_count[key] += 1
       break
+
+def is_subdomain(parsed_domain, domain_bank):
+  if domain_bank == parsed_domain:
+    return True
+  return False
 
 def check_uniqueness(parsed_url, unique_pages):
   """Disregard url fragment and return True if unique."""
