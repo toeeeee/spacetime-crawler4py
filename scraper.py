@@ -96,3 +96,10 @@ def parse_for_robot(parsed_url):
 
   return disallowed_paths
 #returns list of disallowed paths  
+
+
+def check_robot_allows(url, robot_exclusion):
+  """checks if the url is not allowed based on robot.txt"""
+  if url in robot_exclusion:
+    return False
+  return True
