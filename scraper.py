@@ -38,3 +38,24 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+
+
+# Helper methods for is_valid()
+'''
+Defining Uniqueness:
+- avoid fragment
+http://www.ics.uci.edu#aaa and http://www.ics.uci.edu#bbb are the same URL
+- ALL pages found, not just ones scraped
+'''
+def check_uniqueness(parsed_url, unique_pages):
+  """Disregard url fragment and return True if unique."""
+  for page in unique_pages:
+    if (parsed_url.schema == page.schema      and
+        parsed_url.hostname == page.hostname  and
+        parsed_url.path == page.path          and
+        parsed_url.params == page.params      and
+        parsed_url.query == page.query           ):
+      return False
+    unique_pages.add(page)
+    return True
