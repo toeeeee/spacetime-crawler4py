@@ -1,8 +1,6 @@
 import unittest
 from urllib.parse import urlparse
-from scraper import check_valid_domain
-from scraper import is_subdomain
-from scraper import count_subdomains
+from scraper import check_valid_domain, is_subdomain, count_subdomains, check_uniqueness
 
 class ScraperHelperTestCase(unittest.TestCase):
     def test_domain_validity(self):
