@@ -1,6 +1,8 @@
 import re
 from urllib.parse import urlparse
+import urllib.robotparser
 from bs4 import BeautifulSoup as BS
+
 
 CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
 LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
@@ -44,16 +46,14 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     """Determines if URL is valid for scraping and returns boolean.
     Has side effect of answering questions about the URL for report deliverable. Answers
     will be added to global variables."""
-    robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
 
     try:
         parsed = urlparse(url, allow_fragments = False)  # Breaks the url into parts.
 
-        robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
         if (parsed.scheme not in {"http", "https"} or
                 check_valid_domain(parsed) == False or
                 check_uniqueness(parsed, unique_pages) == False or
-                check_robot_allows(parsed, robot_exclusion) == False):
+                check_robot_file(parsed, url) == False):
             return False
 
         count_subdomains(parsed, subdomain_count)
@@ -72,14 +72,17 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
         print("TypeError for ", parsed)
         raise
 
-def find_longest_page(page) -> None:  # function given a page's raw_response
+def find_longest_page(page) -> None:  # function given a page's resp.raw_response
   """
   Check if given page is longer than LONGEST_PAGE in terms of number of words
   """
   if LONGEST_PAGE == None:  # this is the first page crawled over, thus the longest page found so far
     LONGEST_PAGE = page
   else:  # else, compare against the current page
-    if len(page.content) > len(CURR_PAGE.content):
+    page_text = BS(page.content, 'html.parser')  # convert
+    CurrPage_text = BS(CURR_PAGE.content, 'html.parser')
+
+    if len(page_text) > len(CurrPage_text):
       LONGEST_PAGE = page
   return
 
@@ -97,6 +100,7 @@ def most_common_words(lists_of_words) -> list:  # function given a list of lists
         word_freq[word] += 1
 
   # convert the word_freq dict into a list of tuples [(word, freq), ...], order them, then only keep the first 50 elements
+  # CREDIT: I looked up how to sort a list of tuples based on the second element of each tuple (https://stackoverflow.com/questions/10695139/sort-a-list-of-tuples-by-2nd-item-integer-value)
   top_50_words = sorted( [(word, freq) for word, freq in word_freq.items()], key=lambda x: x[1] )[:50]
 
   return top_50_words
@@ -142,6 +146,11 @@ def query_normalization(url):
     return sorted(parse_qs(url.query))
 
 
+def is_subdomain(parsed_domain, domain_bank):
+  if domain_bank == parsed_domain:
+    return True
+  return False
+
 def check_uniqueness(parsed_url, unique_pages):
     """Disregard url fragment and return True if unique."""
     unique = True
@@ -159,24 +168,12 @@ def check_uniqueness(parsed_url, unique_pages):
     return unique
 
   
-def parse_for_robot(parsed_url):
-  """converts url to robots.txt and stores robot_exclusion"""
+
+def check_robot_file(parsed_url, url):
   robot_url = parsed_url.scheme + "://" + parsed_url.hostname + "/robots.txt"
-  disallowed_paths = ()
-  '''
-  use robot_url, and download that file
-  gather data from robots.txt
-  '''
-  # Define user_agent
-  # Disallows
-  # Sitemaps
-  
-  # if its under disallowed, store it in disallowed_paths
-
-  return disallowed_paths  # returns list of disallowed paths  
-
-def check_robot_allows(url, robot_exclusion):
-  """checks if the url is not allowed based on robot.txt"""
-  if url in robot_exclusion:
-    return False
-  return True
+  r_parse = urllib.robotparser.RobotFileParser()
+  r_parse.set_url(robot_url)
+  r_parse.read()
+  if r_parse.can_fetch("IR US24 51886940,28685686,62616299,32303304", url):
+    return True
+  return False
