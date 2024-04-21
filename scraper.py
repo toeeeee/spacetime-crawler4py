@@ -58,6 +58,15 @@ def check_valid_domain(parsed_url) -> bool:
       return False
   return True
 
+def count_subdomains(parsed_url, subdomain_count):
+  """Check for the amount of subdomains within a domain."""
+  for key, value in subdomain_count.items():
+    if key == parsed_url.hostname:
+      subdomain_count[key] += 1
+      break
+
+
+
 def check_uniqueness(parsed_url, unique_pages):
   """Disregard url fragment and return True if unique."""
   for page in unique_pages:
@@ -69,3 +78,21 @@ def check_uniqueness(parsed_url, unique_pages):
       return False
     unique_pages.add(page)
     return True
+  
+
+def parse_for_robot(parsed_url):
+  """converts url to robots.txt and stores robot_exclusion"""
+  robot_url = parsed_url.scheme + "://" + parsed_url.hostname + "/robots.txt"
+  disallowed_paths = ()
+  '''
+  use robot_url, and download that file
+  gather data from robots.txt
+  '''
+  #Define user_agent
+  #Disallows
+  #Sitemaps
+  
+  #if its under disallowed, store it in disallowed_paths
+
+  return disallowed_paths
+#returns list of disallowed paths  
