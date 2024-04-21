@@ -1,5 +1,6 @@
 import re
 from urllib.parse import urlparse
+import urllib.robotparser
 from bs4 import BeautifulSoup as BS
 
 
@@ -149,24 +150,13 @@ def check_uniqueness(parsed_url, unique_pages):
     unique_pages.add(page)
     return True
   
-def parse_for_robot(parsed_url):
-  """converts url to robots.txt and stores robot_exclusion"""
+
+def set_robot_parser(parsed_url, url):
   robot_url = parsed_url.scheme + "://" + parsed_url.hostname + "/robots.txt"
-  disallowed_paths = ()
-  '''
-  use robot_url, and download that file
-  gather data from robots.txt
-  '''
-  # Define user_agent
-  # Disallows
-  # Sitemaps
-  
-  # if its under disallowed, store it in disallowed_paths
 
-  return disallowed_paths  # returns list of disallowed paths  
-
-def check_robot_allows(url, robot_exclusion):
-  """checks if the url is not allowed based on robot.txt"""
-  if url in robot_exclusion:
-    return False
-  return True
+  r_parse = urllib.robotparser.RobotFileParser()
+  r_parse.set_url(robot_url)
+  r_parse.read()
+  if r_parse.can_fetch("IR US24 51886940,28685686,62616299,32303304", url):
+    return True
+  return False
