@@ -2,38 +2,38 @@ import re
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as BS
 
+
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
-    # Implementation required.
-    # url: the URL that was used to get the page
-    # resp.url: the actual url of the page
-    # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
-    # resp.error: when status is not 200, you can check the error here, if needed.
-    # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
-    #         resp.raw_response.url: the url, again
-    #         resp.raw_response.content: the content of the page!
-    # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    found_links = []
-    # Make a list for storing found links
-    if is_valid(resp.url):
-        # Check to make sure that the current url is valid to crawl
-        # Check to make sure the status of the response is good
-        if resp.status != 200:
-            return found_links
-        else:
-            # Get the html content of the page
-            # Using BeautifulSoup to parse the html, and then find all the links within it
-            page_content = resp.raw_response.content
-            soup = BS(page_content, 'html_parser')
-            for soup_url in soup.find_all('a'):
-                link = soup_url.get('href')
-                if link not in found_links:
-                    found_links.append(link)
+  # Implementation required.
+  # url: the URL that was used to get the page
+  # resp.url: the actual url of the page
+  # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
+  # resp.error: when status is not 200, you can check the error here, if needed.
+  # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
+  #         resp.raw_response.url: the url, again
+  #         resp.raw_response.content: the content of the page!
+  # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
+  found_links = [] # a list for storing found links
+  if is_valid(resp.url):
+    # Check to make sure that the current url is valid and the response status is good
+    if resp.status != 200:
+      return found_links
+    else:
+      # Get the html content of the page
+      # Using BeautifulSoup to parse the html, and then find all the links within it
+      page_content = resp.raw_response.content
+      soup = BS(page_content, 'html_parser')
+      for soup_url in soup.find_all('a'):
+        link = soup_url.get('href')
+        if link not in found_links:
+          found_links.append(link)
 
-    return found_links
+  return found_links
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
@@ -57,7 +57,23 @@ def is_valid(url):
         print ("TypeError for ", parsed)
         raise
 
+def most_common_words(lists_of_words) -> list:  # function given a list of lists, each list containing all the words found from that site
+  """return a list of tuples of the 50 words that appeared most often across all the sites crawled"""
+   
+  word_freq = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
+  # list of words that will not be considered for the top 50 most common words
+  stop_words = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"]
+  
+  for site in lists_of_words:  # iterating over each word of each site's list, increase the word's frequency count by 1 when it's encountered
+    for word in site:
+      if (word not in stop_words) and (word not in word_freq):
+        word_freq[word] = 0
+        word_freq[word] += 1
 
+  # convert the word_freq dict into a list of tuples [(word, freq), ...], order them, then only keep the first 50 elements
+  top_50_words = sorted( [(word, freq) for word, freq in word_freq.items()], key=lambda x: x[1] )[:50]
+
+  return top_50_words
 
 # Helper methods for is_valid()
 '''
@@ -83,8 +99,6 @@ def count_subdomains(parsed_url, subdomain_count):
       subdomain_count[key] += 1
       break
 
-
-
 def check_uniqueness(parsed_url, unique_pages):
   """Disregard url fragment and return True if unique."""
   for page in unique_pages:
@@ -97,7 +111,6 @@ def check_uniqueness(parsed_url, unique_pages):
     unique_pages.add(page)
     return True
   
-
 def parse_for_robot(parsed_url):
   """converts url to robots.txt and stores robot_exclusion"""
   robot_url = parsed_url.scheme + "://" + parsed_url.hostname + "/robots.txt"
@@ -106,14 +119,13 @@ def parse_for_robot(parsed_url):
   use robot_url, and download that file
   gather data from robots.txt
   '''
-  #Define user_agent
-  #Disallows
-  #Sitemaps
+  # Define user_agent
+  # Disallows
+  # Sitemaps
   
-  #if its under disallowed, store it in disallowed_paths
+  # if its under disallowed, store it in disallowed_paths
 
-  return disallowed_paths
-#returns list of disallowed paths  
+  return disallowed_paths  # returns list of disallowed paths  
 
 
 def check_robot_allows(url, robot_exclusion):
