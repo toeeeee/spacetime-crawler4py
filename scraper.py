@@ -46,16 +46,14 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     """Determines if URL is valid for scraping and returns boolean.
     Has side effect of answering questions about the URL for report deliverable. Answers
     will be added to global variables."""
-    robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
 
     try:
         parsed = urlparse(url, allow_fragments = False)  # Breaks the url into parts.
 
-        robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
         if (parsed.scheme not in {"http", "https"} or
                 check_valid_domain(parsed) == False or
                 check_uniqueness(parsed, unique_pages) == False or
-                check_robot_allows(parsed, robot_exclusion) == False):
+                check_robot_file(parsed, url) == False):
             return False
 
         count_subdomains(parsed, subdomain_count)
@@ -151,9 +149,8 @@ def check_uniqueness(parsed_url, unique_pages):
     return True
   
 
-def set_robot_parser(parsed_url, url):
+def check_robot_file(parsed_url, url):
   robot_url = parsed_url.scheme + "://" + parsed_url.hostname + "/robots.txt"
-
   r_parse = urllib.robotparser.RobotFileParser()
   r_parse.set_url(robot_url)
   r_parse.read()
