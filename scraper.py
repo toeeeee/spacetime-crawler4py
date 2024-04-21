@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup as BS
 
 CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
@@ -47,13 +47,13 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
 
     try:
-        parsed = urlparse(url)  # Breaks the url into parts.
+        parsed = urlparse(url, allow_fragments = False)  # Breaks the url into parts.
 
         robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
-        if (parsed.scheme not in {"http", "https"}             or
-            check_valid_domain(parsed) == False                or
-            check_uniqueness(parsed, unique_pages) == False    or
-            check_robot_allows(parsed, robot_exclusion) == False ):
+        if (parsed.scheme not in {"http", "https"} or
+                check_valid_domain(parsed) == False or
+                check_uniqueness(parsed, unique_pages) == False or
+                check_robot_allows(parsed, robot_exclusion) == False):
             return False
 
         count_subdomains(parsed, subdomain_count)
@@ -102,15 +102,17 @@ def most_common_words(lists_of_words) -> list:  # function given a list of lists
   return top_50_words
 
 # Helper methods for is_valid()
+'''
+Defining Uniqueness:
+- avoid fragment
+https://www.ics.uci.edu#aaa and https://www.ics.uci.edu#bbb are the same URL
+- ALL pages found, not just ones scraped
+'''
 def check_valid_domain(parsed_url) -> bool:
-  """If not a UCI domain, return False."""
+  """If not a UCI domain, return True."""
   valid_domains = {"ics.uci.edu",
-                   ".ics.uci.edu",
                    "cs.uci.edu",
-                   ".cs.uci.edu,"
                    "informatics.uci.edu",
-                   ".informatics.uci.edu",
-                   ".stats.uci.edu",
                    "stats.uci.edu"}
   for domain in valid_domains:
       if domain in parsed_url.hostname:
