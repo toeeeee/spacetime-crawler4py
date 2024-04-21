@@ -23,7 +23,7 @@ def scraper(url, resp) -> list:
         token = ""
         num_words = 0
         for char in page_text:
-          if not char.isalnum() or len(page_text) != 0:
+          if len(page_text) != 0 or not char.isalnum():
             if token != "":  # continue only if token isn't empty
               num_words += 1
               if token not in FREQ_DICT:  # add into FREQ_DICT
