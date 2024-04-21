@@ -30,7 +30,7 @@ def extract_next_links(url, resp):
       # Using BeautifulSoup to parse the html, and then find all the links within it
       page_content = resp.raw_response.content
       CURR_PAGE = resp.raw_response
-      soup = BS(page_content, 'html_parser')
+      soup = BS(page_content, 'html_parser') #Basic link extraction from the BeautifulSoup Docs
       for soup_url in soup.find_all('a'):
         link = soup_url.get('href')
         if link not in found_links:
@@ -78,6 +78,7 @@ def find_longest_page(page) -> None:  # function given a page's resp.raw_respons
   """
   Check if given page is longer than LONGEST_PAGE in terms of number of words
   """
+  global LONGEST_PAGE
   if LONGEST_PAGE == None:  # this is the first page crawled over, thus the longest page found so far
     LONGEST_PAGE = page
   else:  # else, compare against the current page
