@@ -2,6 +2,7 @@ import re
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as BS
 
+
 CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
 LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
 
@@ -72,14 +73,17 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
         print("TypeError for ", parsed)
         raise
 
-def find_longest_page(page) -> None:  # function given a page's raw_response
+def find_longest_page(page) -> None:  # function given a page's resp.raw_response
   """
   Check if given page is longer than LONGEST_PAGE in terms of number of words
   """
   if LONGEST_PAGE == None:  # this is the first page crawled over, thus the longest page found so far
     LONGEST_PAGE = page
   else:  # else, compare against the current page
-    if len(page.content) > len(CURR_PAGE.content):
+    page_text = BS(page.content, 'html.parser')  # convert 
+    CurrPage_text = BS(CURR_PAGE.content, 'html.parser')
+
+    if len(page_text) > len(CurrPage_text):
       LONGEST_PAGE = page
   return
 
@@ -97,6 +101,7 @@ def most_common_words(lists_of_words) -> list:  # function given a list of lists
         word_freq[word] += 1
 
   # convert the word_freq dict into a list of tuples [(word, freq), ...], order them, then only keep the first 50 elements
+  # CREDIT: I looked up how to sort a list of tuples based on the second element of each tuple (https://stackoverflow.com/questions/10695139/sort-a-list-of-tuples-by-2nd-item-integer-value)
   top_50_words = sorted( [(word, freq) for word, freq in word_freq.items()], key=lambda x: x[1] )[:50]
 
   return top_50_words
