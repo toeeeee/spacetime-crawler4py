@@ -2,7 +2,8 @@ import re
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as BS
 
-
+CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
+LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -27,6 +28,7 @@ def extract_next_links(url, resp):
       # Get the html content of the page
       # Using BeautifulSoup to parse the html, and then find all the links within it
       page_content = resp.raw_response.content
+      CURR_PAGE = resp.raw_response
       soup = BS(page_content, 'html_parser')
       for soup_url in soup.find_all('a'):
         link = soup_url.get('href')
@@ -56,6 +58,17 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+def find_longest_page(page) -> None:  # function given a page's raw_response
+  """
+  Check if given page is longer than LONGEST_PAGE in terms of number of words
+  """
+  if LONGEST_PAGE == None:  # this is the first page crawled over, thus the longest page found so far
+    LONGEST_PAGE = page
+  else:  # else, compare against the current page
+    if len(page.content) > len(CURR_PAGE.content):
+      LONGEST_PAGE = page
+  return
 
 def most_common_words(lists_of_words) -> list:  # function given a list of lists, each list containing all the words found from that site
   """return a list of tuples of the 50 words that appeared most often across all the sites crawled"""
@@ -126,7 +139,6 @@ def parse_for_robot(parsed_url):
   # if its under disallowed, store it in disallowed_paths
 
   return disallowed_paths  # returns list of disallowed paths  
-
 
 def check_robot_allows(url, robot_exclusion):
   """checks if the url is not allowed based on robot.txt"""
