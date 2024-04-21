@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 import urllib.robotparser
 from bs4 import BeautifulSoup as BS
 
