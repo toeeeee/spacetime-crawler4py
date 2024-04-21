@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from bs4 import BeautifulSoup as BS
 
 CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
@@ -47,13 +47,13 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
 
     try:
-        parsed = urlparse(url, allow_fragments = False)  # Breaks the url into parts.
+        parsed = urlparse(url)  # Breaks the url into parts.
 
         robot_exclusion = parse_for_robot(url)  # checks the url for robots.txt
-        if (parsed.scheme not in {"http", "https"} or
-                check_valid_domain(parsed) == False or
-                check_uniqueness(parsed, unique_pages) == False or
-                check_robot_allows(parsed, robot_exclusion) == False):
+        if (parsed.scheme not in {"http", "https"}             or
+            check_valid_domain(parsed) == False                or
+            check_uniqueness(parsed, unique_pages) == False    or
+            check_robot_allows(parsed, robot_exclusion) == False ):
             return False
 
         count_subdomains(parsed, subdomain_count)
@@ -102,23 +102,20 @@ def most_common_words(lists_of_words) -> list:  # function given a list of lists
   return top_50_words
 
 # Helper methods for is_valid()
-'''
-Defining Uniqueness:
-- avoid fragment
-https://www.ics.uci.edu#aaa and https://www.ics.uci.edu#bbb are the same URL
-- ALL pages found, not just ones scraped
-'''
 def check_valid_domain(parsed_url) -> bool:
-  """If not a UCI domain, return True."""
+  """If not a UCI domain, return False."""
   valid_domains = {"ics.uci.edu",
+                   ".ics.uci.edu",
                    "cs.uci.edu",
+                   ".cs.uci.edu,"
                    "informatics.uci.edu",
+                   ".informatics.uci.edu",
+                   ".stats.uci.edu",
                    "stats.uci.edu"}
   for domain in valid_domains:
-      if domain not in parsed_url.hostname:
-        return False
-      else:
+      if domain in parsed_url.hostname:
         return True
+  return False
 
 def count_subdomains(parsed_url, subdomain_count):
   """Check for the amount of subdomains within a domain."""
@@ -127,17 +124,38 @@ def count_subdomains(parsed_url, subdomain_count):
       subdomain_count[key] += 1
       break
 
+
+def hostname_normalization(url):
+    """Normalize url hostnamess for comparison purposes and return normalized"""
+    return url.hostname.strip('www.')
+
+
+def path_normalization(url):
+    """Normalize path by removing duplicate slashes"""
+    return re.sub('/{2,}', '/', url.path)
+
+
+def query_normalization(url):
+    """Normalize url by sorting queries"""
+    return sorted(parse_qs(url.query))
+
+
 def check_uniqueness(parsed_url, unique_pages):
-  """Disregard url fragment and return True if unique."""
-  for page in unique_pages:
-    if (parsed_url.scheme == page.scheme      and
-        parsed_url.hostname == page.hostname  and
-        parsed_url.path == page.path          and
-        parsed_url.params == page.params      and
-        parsed_url.query == page.query           ):
-      return False
-    unique_pages.add(page)
-    return True
+    """Disregard url fragment and return True if unique."""
+    unique = True
+    for page in unique_pages:
+        if (parsed_url.scheme == page.scheme                                   and
+            hostname_normalization(parsed_url) == hostname_normalization(page) and
+            path_normalization(parsed_url) == path_normalization(page)         and
+            parsed_url.params == page.params                                   and
+            query_normalization(parsed_url) == query_normalization(page)          ):
+                unique = False
+
+    if unique:
+        unique_pages.add(parsed_url)
+
+    return unique
+
   
 def parse_for_robot(parsed_url):
   """converts url to robots.txt and stores robot_exclusion"""
