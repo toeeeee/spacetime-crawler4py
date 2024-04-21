@@ -48,6 +48,16 @@ Defining Uniqueness:
 http://www.ics.uci.edu#aaa and http://www.ics.uci.edu#bbb are the same URL
 - ALL pages found, not just ones scraped
 '''
+def check_valid_domain(parsed_url) -> bool:
+  """If not a UCI domain, return True."""
+  valid_domains = {"ics.uci.edu",
+                   "cs.uci.edu",
+                   "informatics.uci.edu",
+                   "stats.uci.edu"}
+  if parsed_url.hostname not in valid_domains:
+      return False
+  return True
+
 def check_uniqueness(parsed_url, unique_pages):
   """Disregard url fragment and return True if unique."""
   for page in unique_pages:
