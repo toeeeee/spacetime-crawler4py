@@ -4,6 +4,8 @@ import urllib.robotparser
 from bs4 import BeautifulSoup as BS
 
 
+
+# SCRAPER GLOBAL VARIABLES
 CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
 LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
 FREQ_DICT = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
@@ -14,38 +16,8 @@ STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "
 def scraper(url, resp) -> list:
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
-    """links = extract_next_links(url, resp)
-    links_list = []
-    for i in range(len(links)):
-      if is_valid(links[i]):  # if link is_valid: append to links_list; check if it's the longest page; and add all of the site's words to FREQ_DICT
-        links_list.append(links[i])
 
-        # add all words on the site to the dictionary and count up number of words
-        page_text = BS(RAW_RESPONSES[i].content, 'html.parser')  # get plain text of html contents of the page
-        token = ""
-        num_words = 0
-        for char in page_text:
-          if len(page_text) != 0 or not char.isalnum():
-            if token != "":  # continue only if token isn't empty
-              num_words += 1
-              if token not in FREQ_DICT:  # add into FREQ_DICT
-                FREQ_DICT[token] = 0  # if word isn't in dict already, add it in
-              FREQ_DICT[token] += 1  # increment frequency by 1
-              token = ""  # reset token to empty to start reading in the next word
-          else:  # since the current char is alphanumeric, for-loop must be on a word; continue adding chars to token
-            token += char
 
-        global LONGEST_PAGE
-        if LONGEST_PAGE == None:  # this must be the first site crawled over, so this is the longest page found so far
-          LONGEST_PAGE = (CURR_PAGE, num_words)  # (page, number of words)
-        elif LONGEST_PAGE[1] < num_words:  # otherwise, compare number of words
-          LONGEST_PAGE = (CURR_PAGE, num_words)
-
-    # CREDIT: I looked up how to sort a list of tuples based on the second element of each tuple (https://stackoverflow.com/questions/10695139/sort-a-list-of-tuples-by-2nd-item-integer-value)
-    top_fifty_words = sorted( [(word, freq) for word, freq in FREQ_DICT.items()], key=lambda x: x[1] )[:50]
-    return links_list
-    """
-    
 def extract_next_links(url, resp):
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
@@ -74,7 +46,7 @@ def extract_next_links(url, resp):
 
   return found_links
 
-
+#IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 sd_count = {"ics.uci.edu": 0, "cs.uci.edu": 0,
                    "informatics.uci.edu": 0, "stats.uci.edu": 0}
 u_pages = set()  # Parsed urls
@@ -109,12 +81,6 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
         raise
 
 # Helper methods for is_valid()
-'''
-Defining Uniqueness:
-- avoid fragment
-https://www.ics.uci.edu#aaa and https://www.ics.uci.edu#bbb are the same URL
-- ALL pages found, not just ones scraped
-'''
 def check_valid_domain(parsed_url) -> bool:
   """If not a UCI domain, return True."""
   valid_domains = {"ics.uci.edu",
@@ -154,6 +120,7 @@ def is_subdomain(parsed_domain, domain_bank):
     return True
   return False
 
+
 def check_uniqueness(parsed_url, unique_pages):
     """Disregard url fragment and return True if unique."""
     unique = True
@@ -169,7 +136,6 @@ def check_uniqueness(parsed_url, unique_pages):
         unique_pages.add(parsed_url)
 
     return unique
-
   
 
 def check_robot_file(parsed_url, url):
