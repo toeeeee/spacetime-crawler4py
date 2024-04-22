@@ -13,6 +13,8 @@ STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "
 
 def scraper(url, resp) -> list:
     links = extract_next_links(url, resp)
+    return [link for link in links if is_valid(link)]
+    """links = extract_next_links(url, resp)
     links_list = []
     for i in range(len(links)):
       if is_valid(links[i]):  # if link is_valid: append to links_list; check if it's the longest page; and add all of the site's words to FREQ_DICT
@@ -42,7 +44,8 @@ def scraper(url, resp) -> list:
     # CREDIT: I looked up how to sort a list of tuples based on the second element of each tuple (https://stackoverflow.com/questions/10695139/sort-a-list-of-tuples-by-2nd-item-integer-value)
     top_fifty_words = sorted( [(word, freq) for word, freq in FREQ_DICT.items()], key=lambda x: x[1] )[:50]
     return links_list
-
+    """
+    
 def extract_next_links(url, resp):
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
