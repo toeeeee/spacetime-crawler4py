@@ -47,8 +47,7 @@ def extract_next_links(url, resp):
   return found_links
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
-sd_count = {"ics.uci.edu": 0, "cs.uci.edu": 0,
-                   "informatics.uci.edu": 0, "stats.uci.edu": 0}
+sd_count = {}
 u_pages = set()  # Parsed urls
 def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     """Determines if URL is valid for scraping and returns boolean.
@@ -56,15 +55,15 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     will be added to global variables."""
 
     try:
-        parsed = urlparse(url, allow_fragments = False)  # Breaks the url into parts.
+        parsed = urlparse(url)  # Breaks the url into parts.
 
-        if (parsed.scheme not in {"http", "https"} or
-                check_valid_domain(parsed) == False or
-                check_uniqueness(parsed, unique_pages) == False or
-                check_robot_file(parsed, url) == False):
+        if (parsed.scheme not in {"http", "https"}          or
+            check_valid_domain(parsed) == False             or
+            check_uniqueness(parsed, unique_pages) == False or
+            check_robot_file(parsed, url) == False            ):
             return False
 
-        count_subdomains(parsed, subdomain_count)
+        add_to_subdomain_count(parsed, subdomain_count)
 
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
@@ -82,22 +81,28 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
 
 # Helper methods for is_valid()
 def check_valid_domain(parsed_url) -> bool:
-  """If not a UCI domain, return True."""
-  valid_domains = {"ics.uci.edu",
-                   "cs.uci.edu",
-                   "informatics.uci.edu",
-                   "stats.uci.edu"}
+  """If not a UCI domain, return False."""
+  valid_domains = {"ics.uci.edu", "cs.uci.edu",
+                   "informatics.uci.edu", "stats.uci.edu"}
   for domain in valid_domains:
       if domain in parsed_url.hostname:
         return True
   return False
 
-def count_subdomains(parsed_url, subdomain_count):
-  """Check for the amount of subdomains within a domain."""
-  for key, value in subdomain_count.items():
-    if is_subdomain(parsed_url.hostname, key):
-      subdomain_count[key] += 1
-      break
+
+def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
+    """Increment subdomain count for parsed url and return if subdomain"""
+    valid_subdomains = {".ics.uci.edu", ".cs.uci.edu",
+                        ".informatics.uci.edu", ".stats.uci.edu"}
+    for subdomain in valid_subdomains:
+        if subdomain in parsed_url.hostname:
+            hostname = hostname_normalization(parsed_url)
+            if hostname in subdomain_count:
+                subdomain_count[hostname] += 1
+            else:
+                subdomain_count[hostname] = 1
+            return True
+    return False
 
 
 def hostname_normalization(url):
@@ -113,12 +118,6 @@ def path_normalization(url):
 def query_normalization(url):
     """Normalize url by sorting queries"""
     return sorted(parse_qs(url.query))
-
-
-def is_subdomain(parsed_domain, domain_bank):
-  if domain_bank == parsed_domain:
-    return True
-  return False
 
 
 def check_uniqueness(parsed_url, unique_pages):
