@@ -48,7 +48,7 @@ def extract_next_links(url, resp):
     return found_links
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
-sd_count = {}
+sd_count = {} # looks like "subdomain": count
 u_pages = set()  # Parsed urls
 def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     """Determines if URL is valid for scraping and returns boolean.
@@ -94,8 +94,7 @@ def check_valid_domain(parsed_url) -> bool:
 
 def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
     """Increment subdomain count for parsed url and return if subdomain"""
-    valid_subdomains = {".ics.uci.edu", ".cs.uci.edu",
-                        ".informatics.uci.edu", ".stats.uci.edu"}
+    valid_subdomains = {".ics.uci.edu"}
     for subdomain in valid_subdomains:
         if not parsed_url.hostname:
             return False
@@ -117,7 +116,6 @@ def hostname_normalization(url):
 def path_normalization(url):
     """Normalize path by removing duplicate slashes"""
     return re.sub('/{2,}', '/', url.path)
-
 
 def query_normalization(url):
     """Normalize url by sorting queries"""
