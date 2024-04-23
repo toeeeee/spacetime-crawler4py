@@ -10,7 +10,10 @@ CURR_PAGE = None  # global variable to hold raw contents of the last site crawle
 LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
 FREQ_DICT = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
 RAW_RESPONSES = []  # list of raw_responses of sites crawled over
+PAGES = []
 STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"] # list of words that will not be considered for the top 50 most common words
+sd_count = {} # looks like "subdomain": count
+u_pages = set()  # Parsed urls
 
 
 def scraper(url, resp) -> list:
@@ -20,6 +23,7 @@ def scraper(url, resp) -> list:
 
 def extract_next_links(url, resp):
     global CURR_PAGE
+    global PAGES
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
   # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -44,12 +48,42 @@ def extract_next_links(url, resp):
             link = soup_url.get('href')
             if link not in found_links:
                 found_links.append(link)
+                PAGES.append(link)
 
     return found_links
 
+def create_report() -> None:
+    """Creates a report on pages scraped"""
+    global sd_count
+    global LONGEST_PAGE
+
+    with open('report.txt', 'w') as f:
+        f.write("REPORT OF FINAL SCRAPER FINDINGS:\n\n")
+
+        # Unique pages (from most common to least)
+        f.write("Top 50 Words:\n")
+        items = sorted(FREQ_DICT.items(), key=lambda token: token[1], reverse=True)
+        for item in items:
+            f.write(f"{item[0]}: {item[1]}\n")
+
+        # What is the longest page in terms of words?
+        f.write("Longest Page:\n")
+        f.write(f"{LONGEST_PAGE}\n")
+        f.write(f"Length: {LONGEST_PAGE_LENGTH}\n\n")
+
+
+        # How many subdomains did you find in ics.uci.edu and their count
+        sd_count = sorted(sd_count)
+        count = 0
+        f.write("Subdomain list:\n")
+        for key, value in sd_count.items():
+            f.write(f"{key}: {value}\n")
+            count += 1
+
+        f.write(f"\nAMOUNT OF SUBDOMAINS: {count}")
+
+
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
-sd_count = {} # looks like "subdomain": count
-u_pages = set()  # Parsed urls
 def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
     """Determines if URL is valid for scraping and returns boolean.
     Has side effect of answering questions about the URL for report deliverable. Answers
@@ -65,14 +99,14 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
 
         add_to_subdomain_count(parsed, subdomain_count)
 
-        if re.match(r".*/(pdf|css|js|png|jpe&g)/*", parsed.path.lower()):
+        if re.match(r".*/(pdf|css|js|png|jpe&g|uploads|upload|calendar|login)/*", parsed.path.lower()):
             return False
 
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf|/pdf/"
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
+            + r"|ps|eps|tex|ppt|pptx|ppsx|doc|docx|xls|xlsx|names"
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
@@ -82,15 +116,19 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
         print("TypeError for ", parsed)
         raise
 
+
 # Helper methods for is_valid()
 def check_valid_domain(parsed_url) -> bool:
   """If not a UCI domain, return False."""
   valid_domains = {"ics.uci.edu", "cs.uci.edu",
                    "informatics.uci.edu", "stats.uci.edu"}
+
   for domain in valid_domains:
       if not parsed_url.hostname:
         return False
       if domain in parsed_url.hostname:
+        if domain == "ics.uci.edu":
+            if parsed_url.hostname[0] != 'i': return False # physICS.uci.edu
         return True
   return False
 
@@ -120,6 +158,7 @@ def path_normalization(url):
     """Normalize path by removing duplicate slashes"""
     return re.sub('/{2,}', '/', url.path)
 
+
 def query_normalization(url):
     """Normalize url by sorting queries"""
     return sorted(parse_qs(url.query))
@@ -140,13 +179,4 @@ def check_uniqueness(parsed_url, unique_pages):
         unique_pages.add(parsed_url)
 
     return unique
-  
 
-def check_robot_file(parsed_url, url):
-  robot_url = parsed_url.scheme + "://" + parsed_url.hostname + "/robots.txt"
-  r_parse = urllib.robotparser.RobotFileParser()
-  r_parse.set_url(robot_url)
-  r_parse.read()
-  if r_parse.can_fetch("IR US24 51886940,28685686,62616299,32303304", url):
-    return True
-  return False
