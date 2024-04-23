@@ -132,11 +132,11 @@ def create_report() -> None:
 
 
         # How many subdomains did you find in ics.uci.edu and their count
-        sd_count = sorted(sd_count)
+        items = sorted(sd_count.items())
         count = 0
         f.write("Subdomain list:\n")
-        for key, value in sd_count.items():
-            f.write(f"{key}: {value}\n")
+        for item in items:
+            f.write(f"{item[0]}: {item[1]}\n")
             count += 1
 
         f.write(f"\nAMOUNT OF SUBDOMAINS: {count}")
