@@ -4,22 +4,20 @@ import urllib.robotparser
 from bs4 import BeautifulSoup as BS
 
 
-
-# SCRAPER GLOBAL VARIABLES
-CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
 LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
 FREQ_DICT = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
-RAW_RESPONSES = []  # list of raw_responses of sites crawled over
-STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"] # list of words that will not be considered for the top 50 most common words
+STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"]  # list of words that will not be considered for the top 50 most common words
+# is_valid global variables
+SD_COUNT = {"ics.uci.edu": 0, "cs.uci.edu": 0,
+                   "informatics.uci.edu": 0, "stats.uci.edu": 0}
+U_PAGES = set()  # Parsed urls
 
 
 def scraper(url, resp) -> list:
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
-
 def extract_next_links(url, resp):
-    global CURR_PAGE
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
   # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -36,9 +34,8 @@ def extract_next_links(url, resp):
     else:
       # Get the html content of the page
       # Using BeautifulSoup to parse the html, and then find all the links within it
-        RAW_RESPONSES.append(resp.raw_response)
         page_content = resp.raw_response.content
-        CURR_PAGE = resp.raw_response
+        count_and_add_to_dict(resp.raw_response)
         soup = BS(page_content, 'html.parser')
         for soup_url in soup.find_all('a'):
             link = soup_url.get('href')
@@ -47,11 +44,63 @@ def extract_next_links(url, resp):
 
     return found_links
 
-#IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
-sd_count = {"ics.uci.edu": 0, "cs.uci.edu": 0,
-                   "informatics.uci.edu": 0, "stats.uci.edu": 0}
-u_pages = set()  # Parsed urls
-def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
+def count_and_add_to_dict(page) -> None:  # given a page, get the number of words and add words to FREQ_DICT
+  global FREQ_DICT
+  global LONGEST_PAGE
+  global STOP_WORDS
+
+  page_content = BS(page.content, 'html.parser')  # convert from HTML to plain text
+  token = ""  # used to collect all the chars of each word in the page
+  num_words = 0  # used to count the number of words in the page
+  for char in page_content:
+    if char.isalnum():  # since the current char is alphanumeric, continue adding chars to token
+      token += char.lower()
+    else:  # add the current token to the dictionary and increase word count
+      if token != "":  # continue only if token isn't empty
+        if token not in STOP_WORDS: num_words += 1
+        if token not in FREQ_DICT:  # if word isn't in dict already, add it in
+          FREQ_DICT[token] = 0
+        FREQ_DICT[token] += 1  # increment frequency of the word by 1
+        token = ""  # reset token to empty to start reading in the next word
+  
+  # check if this page is the longest page found so far
+  if LONGEST_PAGE == None:  # this is the first site crawled, so this is the longest page so far
+    LONGEST_PAGE = (page, num_words)  # format: (page, number of words)
+  elif LONGEST_PAGE[1] < num_words:  # otherwise, compare number of words & redefine if needed
+    LONGEST_PAGE = (page, num_words)
+
+  return
+
+def create_report() -> None:  # make the report txt file
+  """
+  Besides the code itself, must submit a report containing answers to the following questions:
+  1. How many unique pages did you find?
+  2. What is the longest page in terms of the number of words?
+  3. What are the 50 most common words in the entire set of pages crawled under these domains?
+  4. How many subdomains did you find in the ics.uci.edu domain?
+  """
+  global SD_COUNT
+  global LONGEST_PAGE
+
+  # CREDIT:(https://stackoverflow.com/questions/10695139/sort-a-list-of-tuples-by-2nd-item-integer-value)
+  num_unique_pages = 0  # TODO
+  top_fifty_words = sorted( [(word, freq) for word, freq in FREQ_DICT.items()], key=lambda x: x[1] )[:-50]
+  pass
+  top_fifty_string = ""
+  for i in range(len(top_fifty_words)):
+    top_fifty_string += f"\t{i}. {top_fifty_string[i][0]}: {top_fifty_string[i][1]}\n"
+  num_subdomains = 0  # SD_COUNT {site/host name: count}
+  for key in SD_COUNT:
+    num_subdomains += SD_COUNT[key]
+  # make txt file of all subdomains and counts
+
+  with open("report.txt", "w") as file:
+    file.write(f"REPORT\n\n\nNumber of unique pages found: {num_unique_pages}\n\nLongest page in terms of the number of words: {LONGEST_PAGE.url}\n\n50 most common words found:\n{top_fifty_string}\nNumber of 'ics.uci.edu' subdomains found: {num_subdomains}\n")
+
+  return None
+
+# IS_VALID HELPERS BELOW ----------------------------------------------------------------------------------------------------------
+def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
     """Determines if URL is valid for scraping and returns boolean.
     Has side effect of answering questions about the URL for report deliverable. Answers
     will be added to global variables."""
