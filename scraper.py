@@ -59,7 +59,7 @@ def tokenizer(content, allow_stop_words=False) -> list:
     tokens = []
     new_token = ""
     for char in content:
-        text = char
+        text = str(char)
         if not text:
             if not allow_stop_words:
                 if new_token and new_token not in STOP_WORDS:
