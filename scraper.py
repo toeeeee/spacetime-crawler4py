@@ -19,6 +19,7 @@ def scraper(url, resp) -> list:
 
 
 def extract_next_links(url, resp):
+    global CURR_PAGE
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
   # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -27,24 +28,24 @@ def extract_next_links(url, resp):
   #         resp.raw_response.url: the url, again
   #         resp.raw_response.content: the content of the page!
   # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-  found_links = [] # a list for storing found links
-  if is_valid(resp.url):
+    found_links = [] # a list for storing found links
+  #if is_valid(resp.url):
     # Check to make sure that the current url is valid and the response status is good
     if resp.status != 200:
-      return found_links
+        return found_links
     else:
       # Get the html content of the page
       # Using BeautifulSoup to parse the html, and then find all the links within it
-      RAW_RESPONSES.append(resp.raw_response)
-      page_content = resp.raw_response.content
-      CURR_PAGE = resp.raw_response
-      soup = BS(page_content, 'html.parser')
-      for soup_url in soup.find_all('a'):
-        link = soup_url.get('href')
-        if link not in found_links:
-          found_links.append(link)
+        RAW_RESPONSES.append(resp.raw_response)
+        page_content = resp.raw_response.content
+        CURR_PAGE = resp.raw_response
+        soup = BS(page_content, 'html.parser')
+        for soup_url in soup.find_all('a'):
+            link = soup_url.get('href')
+            if link not in found_links:
+                found_links.append(link)
 
-  return found_links
+    return found_links
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 sd_count = {}
