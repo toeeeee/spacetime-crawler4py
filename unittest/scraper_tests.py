@@ -1,4 +1,5 @@
 import unittest
+import re
 from urllib.parse import urlparse
 from scraper import check_valid_domain, add_to_subdomain_count, check_uniqueness
 
@@ -37,6 +38,11 @@ class ScraperHelperTestCase(unittest.TestCase):
 
         # Subdomain counting
         self.assertEqual(2, sd_count["archive.ics.uci.edu"])
+
+    def test_pdf_not_valid(self):
+        pdf = urlparse('https://www.informatics.uci.edu/files/pdf/InformaticsBrochure-March2018')
+        self.assertTrue(re.match(r".*/(pdf|css|js|png|jpe&g)/*", pdf.path.lower()))
+
 
 if __name__ == '__main__':
     unittest.main()
