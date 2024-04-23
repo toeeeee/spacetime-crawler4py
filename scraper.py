@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup as BS
 # SCRAPER GLOBAL VARIABLES
 CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
 LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
+LONGEST_PAGE_LENGTH = None
 FREQ_DICT = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
 RAW_RESPONSES = []  # list of raw_responses of sites crawled over
 PAGES = []
@@ -42,7 +43,11 @@ def extract_next_links(url, resp):
       # Using BeautifulSoup to parse the html, and then find all the links within it
         RAW_RESPONSES.append(resp.raw_response)
         page_content = resp.raw_response.content
-        CURR_PAGE = resp.raw_response
+        tokens = tokenizer(page_content) #tokenize the current page
+        update_freq(tokens) #update the token frequency dictionary
+        #CURR_PAGE = resp.raw_response.url
+        update_longest_page(page_content, resp.raw_response.url) #update the longest page found
+
         soup = BS(page_content, 'html.parser')
         for soup_url in soup.find_all('a'):
             link = soup_url.get('href')
@@ -51,6 +56,60 @@ def extract_next_links(url, resp):
                 PAGES.append(link)
 
     return found_links
+
+
+#SCRAPER FUNCTIONS----------------------------------------------------------------
+
+def tokenizer(content, allow_stop_words=False) -> list:
+    #tokenizer for page content
+    tokens = []
+    new_token = ""
+    for char in content:
+        text = str(char)
+        if not text:
+            if not allow_stop_words:
+                if new_token and new_token not in STOP_WORDS:
+                    tokens.append(new_token)
+                    break
+            else:
+                if new_token:
+                    tokens.append(new_token)
+                    break
+        if text.lower().isalnum():
+            new_token += text.lower()
+        else:
+            if not allow_stop_words:
+                if new_token and new_token not in STOP_WORDS:
+                    tokens.append(new_token)
+            else:
+                if new_token:
+                    tokens.append(new_token)
+        new_token = ""
+    return tokens
+
+def update_freq(tokens) -> None:
+    #updates the global FREQ_DICT dictionary
+    global FREQ_DICT
+    for token in tokens:
+        try:
+            FREQ_DICT[token] += 1
+        except KeyError:
+            FREQ_DICT[token] = 1
+
+def update_longest_page(content, page) -> None:
+    #Update the longest page found using global variables
+    global LONGEST_PAGE
+    global LONGEST_PAGE_LENGTH
+
+    curr_len = len(tokenizer(content, allow_stop_words=True))
+
+    if LONGEST_PAGE is None:
+        LONGEST_PAGE = page
+        LONGEST_PAGE_LENGTH = curr_len
+    else:
+        if curr_len > LONGEST_PAGE_LENGTH:
+            LONGEST_PAGE = page
+            LONGEST_PAGE_LENGTH = curr_len
 
 def create_report() -> None:
     """Creates a report on pages scraped"""
@@ -81,6 +140,7 @@ def create_report() -> None:
             count += 1
 
         f.write(f"\nAMOUNT OF SUBDOMAINS: {count}")
+
 
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------

@@ -6,6 +6,8 @@ from utils.config import Config
 from crawler import Crawler
 from scraper import create_report
 
+from scraper import FREQ_DICT, LONGEST_PAGE
+
 
 def main(config_file, restart):
     cparser = ConfigParser()
