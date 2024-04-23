@@ -60,8 +60,7 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
 
         if (parsed.scheme not in {"http", "https"}          or
             check_valid_domain(parsed) == False             or
-            check_uniqueness(parsed, unique_pages) == False or
-            check_robot_file(parsed, url) == False            ):
+            check_uniqueness(parsed, unique_pages) == False ):
             return False
 
         add_to_subdomain_count(parsed, subdomain_count)
@@ -86,6 +85,8 @@ def check_valid_domain(parsed_url) -> bool:
   valid_domains = {"ics.uci.edu", "cs.uci.edu",
                    "informatics.uci.edu", "stats.uci.edu"}
   for domain in valid_domains:
+      if not parsed_url.hostname:
+        return False
       if domain in parsed_url.hostname:
         return True
   return False
@@ -96,6 +97,8 @@ def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
     valid_subdomains = {".ics.uci.edu", ".cs.uci.edu",
                         ".informatics.uci.edu", ".stats.uci.edu"}
     for subdomain in valid_subdomains:
+        if not parsed_url.hostname:
+            return False
         if subdomain in parsed_url.hostname:
             hostname = hostname_normalization(parsed_url)
             if hostname in subdomain_count:
