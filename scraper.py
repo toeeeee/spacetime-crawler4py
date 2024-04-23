@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup as BS
 # SCRAPER GLOBAL VARIABLES
 CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
 LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
+LONGEST_PAGE_LENGTH = None
 FREQ_DICT = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
 RAW_RESPONSES = []  # list of raw_responses of sites crawled over
 STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"] # list of words that will not be considered for the top 50 most common words
@@ -40,7 +41,9 @@ def extract_next_links(url, resp):
         page_content = resp.raw_response.content
         tokens = tokenizer(page_content) #tokenize the current page
         update_freq(tokens) #update the token frequency dictionary
-        CURR_PAGE = resp.raw_response
+        #CURR_PAGE = resp.raw_response.url
+        update_longest_page(page_content, resp.raw_response.url) #update the longest page found
+
         soup = BS(page_content, 'html.parser')
         for soup_url in soup.find_all('a'):
             link = soup_url.get('href')
@@ -49,22 +52,33 @@ def extract_next_links(url, resp):
 
     return found_links
 
-def tokenizer(content) -> list:
+#SCRAPER FUNCTIONS----------------------------------------------------------------
+
+def tokenizer(content, allow_stop_words=False) -> list:
     #tokenizer for page content
     tokens = []
     new_token = ""
     for char in content:
         text = char
         if not text:
-            if new_token and new_token not in STOP_WORDS:
-                tokens.append(new_token)
-                break
+            if not allow_stop_words:
+                if new_token and new_token not in STOP_WORDS:
+                    tokens.append(new_token)
+                    break
+            else:
+                if new_token:
+                    tokens.append(new_token)
+                    break
         if text.lower().isalnum():
             new_token += text.lower()
         else:
-            if new_token and new_token not in STOP_WORDS:
-                tokens.append(new_token)
-            new_token = ""
+            if not allow_stop_words:
+                if new_token and new_token not in STOP_WORDS:
+                    tokens.append(new_token)
+            else:
+                if new_token:
+                    tokens.append(new_token)
+        new_token = ""
     return tokens
 
 def update_freq(tokens) -> None:
@@ -75,6 +89,21 @@ def update_freq(tokens) -> None:
             FREQ_DICT[token] += 1
         except KeyError:
             FREQ_DICT[token] = 1
+
+def update_longest_page(content, page) -> None:
+    #Update the longest page found using global variables
+    global LONGEST_PAGE
+    global LONGEST_PAGE_LENGTH
+
+    curr_len = len(tokenizer(content, allow_stop_words=True))
+
+    if LONGEST_PAGE is None:
+        LONGEST_PAGE = page
+        LONGEST_PAGE_LENGTH = curr_len
+    else:
+        if curr_len > LONGEST_PAGE_LENGTH:
+            LONGEST_PAGE = page
+            LONGEST_PAGE_LENGTH = curr_len
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 sd_count = {}
