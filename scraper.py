@@ -38,6 +38,8 @@ def extract_next_links(url, resp):
       # Using BeautifulSoup to parse the html, and then find all the links within it
         RAW_RESPONSES.append(resp.raw_response)
         page_content = resp.raw_response.content
+        tokens = tokenizer(page_content) #tokenize the current page
+        update_freq(tokens) #update the token frequency dictionary
         CURR_PAGE = resp.raw_response
         soup = BS(page_content, 'html.parser')
         for soup_url in soup.find_all('a'):
@@ -46,6 +48,33 @@ def extract_next_links(url, resp):
                 found_links.append(link)
 
     return found_links
+
+def tokenizer(content) -> list:
+    #tokenizer for page content
+    tokens = []
+    new_token = ""
+    for char in content:
+        text = char
+        if not text:
+            if new_token and new_token not in STOP_WORDS:
+                tokens.append(new_token)
+                break
+        if text.lower().isalnum():
+            new_token += text.lower()
+        else:
+            if new_token and new_token not in STOP_WORDS:
+                tokens.append(new_token)
+            new_token = ""
+    return tokens
+
+def update_freq(tokens) -> None:
+    #updates the global FREQ_DICT dictionary
+    global FREQ_DICT
+    for token in tokens:
+        try:
+            FREQ_DICT[token] += 1
+        except KeyError:
+            FREQ_DICT[token] = 1
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 sd_count = {}
