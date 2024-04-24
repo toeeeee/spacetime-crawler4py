@@ -23,8 +23,6 @@ def scraper(url, resp) -> list:
 
 
 def extract_next_links(url, resp):
-    global CURR_PAGE
-    global PAGES
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
   # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -41,17 +39,14 @@ def extract_next_links(url, resp):
     else:
       # Get the html content of the page
       # Using BeautifulSoup to parse the html, and then find all the links within it
-        RAW_RESPONSES.append(resp.raw_response)
         page_content = resp.raw_response.content
-        tokens = tokenizer(page_content) #tokenize the current page
+        soup = BS(page_content, 'html.parser')
+        tokens = tokenizer(str(soup.get_text()))  # tokenize the current page
         #if there's no data on the page
         if tokens == len(tokens):
             return
-        update_freq(tokens) #update the token frequency dictionary
-        #CURR_PAGE = resp.raw_response.url
-        update_longest_page(page_content, resp.raw_response.url) #update the longest page found
-
-        soup = BS(page_content, 'html.parser')
+        update_freq(tokens)  # update the token frequency dictionary
+        update_longest_page(str(soup.get_text()), resp.raw_response.url)  # update the longest page found
         for soup_url in soup.find_all('a'):
             link = soup_url.get('href')
             if link not in found_links:
@@ -87,7 +82,7 @@ def tokenizer(content, allow_stop_words=False) -> list:
             else:
                 if new_token:
                     tokens.append(new_token)
-        new_token = ""
+            new_token = ""
     return tokens
 
 def update_freq(tokens) -> None:
@@ -106,13 +101,10 @@ def update_longest_page(content, page) -> None:
 
     curr_len = len(tokenizer(content, allow_stop_words=True))
 
-    if LONGEST_PAGE is None:
-        LONGEST_PAGE = page
-        LONGEST_PAGE_LENGTH = curr_len
-    else:
-        if curr_len > LONGEST_PAGE_LENGTH:
-            LONGEST_PAGE = page
-            LONGEST_PAGE_LENGTH = curr_len
+    if not LONGEST_PAGE:
+        LONGEST_PAGE = [page, curr_len]
+    elif curr_len > LONGEST_PAGE[1]:
+            LONGEST_PAGE = [page, curr_len]
 
 def create_report() -> None:
     """Creates a report on pages scraped"""
@@ -147,7 +139,8 @@ def create_report() -> None:
 
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
-def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
+def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
+
     """Determines if URL is valid for scraping and returns boolean.
     Has side effect of answering questions about the URL for report deliverable. Answers
     will be added to global variables."""
