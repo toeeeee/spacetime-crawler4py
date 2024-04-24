@@ -12,7 +12,7 @@ STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "
 SD_COUNT = {} # format: {"subdomain": count, ...}
 U_PAGES = set()  # Parsed urls
 
-
+#
 def scraper(url, resp) -> list:
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -38,6 +38,8 @@ def extract_next_links(url, resp):
         page_content = resp.raw_response.content
         soup = BS(page_content, 'html.parser')
         tokens = tokenizer(str(soup.get_text()))  # tokenize the current page
+        if len(tokens) == 0:
+            return
         update_freq(tokens)  # update the token frequency dictionary
         update_longest_page(str(soup.get_text()), resp.raw_response.url)  # update the longest page found
         for soup_url in soup.find_all('a'):
