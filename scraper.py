@@ -6,15 +6,11 @@ from bs4 import BeautifulSoup as BS
 
 
 # SCRAPER GLOBAL VARIABLES
-CURR_PAGE = None  # global variable to hold raw contents of the last site crawled over
-LONGEST_PAGE = None  # the page with the most number of words (not counting HTML markup)
-LONGEST_PAGE_LENGTH = None
-FREQ_DICT = {}  # dict of word-freq pairs (freq: word's frequency of appearance across all sites visited)
-RAW_RESPONSES = []  # list of raw_responses of sites crawled over
-PAGES = []
+LONGEST_PAGE = []  # ( format: [page, number of words] ) the page with greatest number of words
+FREQ_DICT = {}  # dict of word-frequency pairs
 STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"] # list of words that will not be considered for the top 50 most common words
-sd_count = {} # looks like "subdomain": count
-u_pages = set()  # Parsed urls
+SD_COUNT = {} # format: {"subdomain": count, ...}
+U_PAGES = set()  # Parsed urls
 
 
 def scraper(url, resp) -> list:
@@ -23,8 +19,6 @@ def scraper(url, resp) -> list:
 
 
 def extract_next_links(url, resp):
-    global CURR_PAGE
-    global PAGES
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
   # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -41,14 +35,11 @@ def extract_next_links(url, resp):
     else:
       # Get the html content of the page
       # Using BeautifulSoup to parse the html, and then find all the links within it
-        RAW_RESPONSES.append(resp.raw_response)
         page_content = resp.raw_response.content
-        tokens = tokenizer(page_content) #tokenize the current page
-        update_freq(tokens) #update the token frequency dictionary
-        #CURR_PAGE = resp.raw_response.url
-        update_longest_page(page_content, resp.raw_response.url) #update the longest page found
-
         soup = BS(page_content, 'html.parser')
+        tokens = tokenizer(str(soup.get_text()))  # tokenize the current page
+        update_freq(tokens)  # update the token frequency dictionary
+        update_longest_page(str(soup.get_text()), resp.raw_response.url)  # update the longest page found
         for soup_url in soup.find_all('a'):
             link = soup_url.get('href')
             if link not in found_links:
@@ -84,7 +75,7 @@ def tokenizer(content, allow_stop_words=False) -> list:
             else:
                 if new_token:
                     tokens.append(new_token)
-        new_token = ""
+            new_token = ""
     return tokens
 
 def update_freq(tokens) -> None:
@@ -99,52 +90,49 @@ def update_freq(tokens) -> None:
 def update_longest_page(content, page) -> None:
     #Update the longest page found using global variables
     global LONGEST_PAGE
-    global LONGEST_PAGE_LENGTH
 
     curr_len = len(tokenizer(content, allow_stop_words=True))
 
-    if LONGEST_PAGE is None:
-        LONGEST_PAGE = page
-        LONGEST_PAGE_LENGTH = curr_len
-    else:
-        if curr_len > LONGEST_PAGE_LENGTH:
-            LONGEST_PAGE = page
-            LONGEST_PAGE_LENGTH = curr_len
+    if not LONGEST_PAGE:
+        LONGEST_PAGE = [page, curr_len]
+    elif curr_len > LONGEST_PAGE[1]:
+            LONGEST_PAGE = [page, curr_len]
 
 def create_report() -> None:
     """Creates a report on pages scraped"""
-    global sd_count
+    global SD_COUNT
     global LONGEST_PAGE
 
     with open('report.txt', 'w') as f:
-        f.write("REPORT OF FINAL SCRAPER FINDINGS:\n\n")
+        f.write("Report of Final Scraper Findings\n\n")
 
-        # Unique pages (from most common to least)
-        f.write("Top 50 Words:\n")
-        items = sorted(FREQ_DICT.items(), key=lambda token: token[1], reverse=True)
-        for item in items:
-            f.write(f"{item[0]}: {item[1]}\n")
+        # Number of unique pages found
+        f.write(f"Number of unique pages found: {len(U_PAGES)}\n\n")
 
-        # What is the longest page in terms of words?
-        f.write("Longest Page:\n")
-        f.write(f"{LONGEST_PAGE}\n")
-        f.write(f"Length: {LONGEST_PAGE_LENGTH}\n\n")
+        # Longest page in terms of words
+        f.write("Longest page in terms of number of words:\n")
+        f.write(f"\tPage: {LONGEST_PAGE[0].url}\n")
+        f.write(f"\tLength: {LONGEST_PAGE[1]}\n\n")
 
+        # Top fifty most common words found
+        top_fifty_words = sorted( [(word, freq) for word, freq in FREQ_DICT.items()], key=lambda token: token[1], reverse = True )[0:50] 
+        # items = sorted(FREQ_DICT.items(), key=lambda token: token[1], reverse=True)
+        f.write("50 most commont words:\n")
+        for item in top_fifty_words:
+            f.write(f"\t{item[0]}: {item[1]}\n")
 
-        # How many subdomains did you find in ics.uci.edu and their count
-        items = sorted(sd_count.items())
-        count = 0
-        f.write("Subdomain list:\n")
-        for item in items:
-            f.write(f"{item[0]}: {item[1]}\n")
-            count += 1
-
-        f.write(f"\nAMOUNT OF SUBDOMAINS: {count}")
+        # Number of ics.uci.edu subdomains found and their count
+        sd_list = sorted( [(sd, freq) for sd, freq in SD_COUNT.items()], key=lambda sd: sd[0] )  # convert SD_COUNT
+        f.write(f"\nNumber of subdomains: {len(sd_list)}")
+        f.write("List of subdomains found:\n")
+        for sd in sd_list:
+            f.write(f"\t{sd[0]}: {sd[1]}\n")
 
 
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
-def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
+def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
+
     """Determines if URL is valid for scraping and returns boolean.
     Has side effect of answering questions about the URL for report deliverable. Answers
     will be added to global variables."""
@@ -179,18 +167,16 @@ def is_valid(url, subdomain_count = sd_count, unique_pages = u_pages) -> bool:
 
 # Helper methods for is_valid()
 def check_valid_domain(parsed_url) -> bool:
-  """If not a UCI domain, return False."""
-  valid_domains = {"ics.uci.edu", "cs.uci.edu",
-                   "informatics.uci.edu", "stats.uci.edu"}
+    """If not a UCI domain, return False."""
+    valid_domains = {".ics.uci.edu", ".cs.uci.edu",
+                   ".informatics.uci.edu", ".stats.uci.edu"}
 
-  for domain in valid_domains:
-      if not parsed_url.hostname:
-        return False
-      if domain in parsed_url.hostname:
-        if domain == "ics.uci.edu":
-            if parsed_url.hostname[0] != 'i': return False # physICS.uci.edu
-        return True
-  return False
+    for domain in valid_domains:
+        if not parsed_url.hostname:
+            return False
+        if parsed_url.hostname.find(domain) > -1:
+            return True
+    return False
 
 
 def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
