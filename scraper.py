@@ -37,13 +37,12 @@ def extract_next_links(url, resp):
     else:
       # Get the html content of the page
       # Using BeautifulSoup to parse the html, and then find all the links within it
-        RAW_RESPONSES.append(resp.raw_response)
         page_content = resp.raw_response.content
-        tokens = tokenizer(page_content) #tokenize the current page
-        update_freq(tokens) #update the token frequency dictionary
-        update_longest_page(page_content, resp.raw_response.url) #update the longest page found
 
         soup = BS(page_content, 'html.parser')
+        tokens = tokenizer(str(soup.get_text()))  # tokenize the current page
+        update_freq(tokens)  # update the token frequency dictionary
+        update_longest_page(str(soup.get_text()), resp.raw_response.url)  # update the longest page found
         for soup_url in soup.find_all('a'):
             link = soup_url.get('href')
             if link not in found_links:
@@ -79,7 +78,7 @@ def tokenizer(content, allow_stop_words=False) -> list:
             else:
                 if new_token:
                     tokens.append(new_token)
-        new_token = ""
+            new_token = ""
     return tokens
 
 def update_freq(tokens) -> None:
