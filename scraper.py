@@ -38,7 +38,7 @@ def extract_next_links(url, resp):
         page_content = resp.raw_response.content
         soup = BS(page_content, 'html.parser')
         tokens = tokenizer(str(soup.get_text()))  # tokenize the current page
-        if len(tokens) == 0:
+        if len(tokens) < 10:
             return
         update_freq(tokens)  # update the token frequency dictionary
         update_longest_page(str(soup.get_text()), resp.raw_response.url)  # update the longest page found
