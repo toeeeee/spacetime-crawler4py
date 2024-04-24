@@ -19,8 +19,6 @@ def scraper(url, resp) -> list:
 
 
 def extract_next_links(url, resp):
-    global CURR_PAGE
-    global PAGES
   # url: the URL that was used to get the page
   # resp.url: the actual url of the page
   # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -38,7 +36,6 @@ def extract_next_links(url, resp):
       # Get the html content of the page
       # Using BeautifulSoup to parse the html, and then find all the links within it
         page_content = resp.raw_response.content
-
         soup = BS(page_content, 'html.parser')
         tokens = tokenizer(str(soup.get_text()))  # tokenize the current page
         update_freq(tokens)  # update the token frequency dictionary
@@ -96,7 +93,7 @@ def update_longest_page(content, page) -> None:
 
     curr_len = len(tokenizer(content, allow_stop_words=True))
 
-    if LONGEST_PAGE is None:
+    if not LONGEST_PAGE:
         LONGEST_PAGE = [page, curr_len]
     elif curr_len > LONGEST_PAGE[1]:
             LONGEST_PAGE = [page, curr_len]
@@ -135,6 +132,7 @@ def create_report() -> None:
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
+
     """Determines if URL is valid for scraping and returns boolean.
     Has side effect of answering questions about the URL for report deliverable. Answers
     will be added to global variables."""

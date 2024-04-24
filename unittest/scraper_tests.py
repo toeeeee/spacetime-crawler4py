@@ -1,6 +1,7 @@
 import unittest
+import re
 from urllib.parse import urlparse
-from scraper import check_valid_domain, is_subdomain, count_subdomains, check_uniqueness
+from scraper import check_valid_domain, add_to_subdomain_count, check_uniqueness
 
 class ScraperHelperTestCase(unittest.TestCase):
     def test_domain_validity(self):
@@ -26,24 +27,22 @@ class ScraperHelperTestCase(unittest.TestCase):
         self.assertTrue(check_uniqueness(newsite, unique_pgs))
         self.assertEqual(unique_pgs, {base, newsite})
 
-    def test_subdomain(self):
-        domain_bank = ("ics.uci.edu",
-                   "cs.uci.edu",
-                   "informatics.uci.edu",
-                    "stats.uci.edu"
-                    ".ics.uci.edu",
-                    ".cs.uci.edu",
-                     ".informatics.uci.edu",
-                     ".stats.uci.edu")
+    def test_subdomain_checker(self):
+        sd_count = {}
+        parsed = urlparse('https://archive.ics.uci.edu/')
+        self.assertTrue(add_to_subdomain_count(parsed, sd_count))
+        parsed = urlparse("https://archive.ics.uci.edu/dataset/53/iris")
+        self.assertTrue(add_to_subdomain_count(parsed, sd_count))
+        parsed = urlparse("https://ics.uci.edu/~dillenco/ics6d")
+        self.assertFalse(add_to_subdomain_count(parsed, sd_count))
 
-        self.assertTrue(is_subdomain("https://archive.ics.uci.edu/",domain_bank))
-        self.assertTrue(is_subdomain("https://ics.uci.edu/~dillenco/ics6d", domain_bank))
-    #subdomain counting
-        counter = 0
-        parsed_url = "https://archive.ics.uci.edu/"
-        parsed_url2 = "https://ics.uci.edu/~dillenco/ics6d"
-        self.assertEqual(1, count_subdomains(parsed_url, counter))
-        self.assertEqual(2, count_subdomains(parsed_url2, counter))
+        # Subdomain counting
+        self.assertEqual(2, sd_count["archive.ics.uci.edu"])
+
+    def test_pdf_not_valid(self):
+        pdf = urlparse('https://www.informatics.uci.edu/files/pdf/InformaticsBrochure-March2018')
+        self.assertTrue(re.match(r".*/(pdf|css|js|png|jpe&g)/*", pdf.path.lower()))
+
 
 if __name__ == '__main__':
     unittest.main()

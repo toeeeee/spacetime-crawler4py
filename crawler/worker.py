@@ -1,6 +1,10 @@
 from threading import Thread
 
 from inspect import getsource
+
+import requests.exceptions
+import urllib3.exceptions
+
 from utils.download import download
 from utils import get_logger
 import scraper
@@ -23,7 +27,28 @@ class Worker(Thread):
             if not tbd_url:
                 self.logger.info("Frontier is empty. Stopping Crawler.")
                 break
-            resp = download(tbd_url, self.config, self.logger)
+            try:
+                resp = download(tbd_url, self.config, self.logger) #
+            except ConnectionRefusedError:
+                self.logger(f"Connection refused")
+                time.sleep(120)
+                continue
+            except urllib3.exceptions.ConnectionError:
+                self.logger(f"Connection error")
+                time.sleep(120)
+                continue
+            except urllib3.exceptions.NewConnectionError:
+                self.logger(f"Cant open new connection error")
+                time.sleep(120)
+                continue
+            except urllib3.exceptions.MaxRetryError:
+                self.logger(f"Reached max attempts")
+                time.sleep(120)
+                continue
+            except requests.exceptions.ConnectionError:
+                self.logger(f"Reached connection error for requests")
+                time.sleep(120)
+                continue
             self.logger.info(
                 f"Downloaded {tbd_url}, status <{resp.status}>, "
                 f"using cache {self.config.cache_server}.")
