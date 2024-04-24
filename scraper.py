@@ -6,11 +6,11 @@ from bs4 import BeautifulSoup as BS
 
 
 # SCRAPER GLOBAL VARIABLES
-LONGEST_PAGE = []  # ( format: [page, number of words] ) the page with greatest number of words
+LONGEST_PAGE = ()  # ( format: page, number of words ) the page with greatest number of words
 FREQ_DICT = {}  # dict of word-frequency pairs
 STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"] # list of words that will not be considered for the top 50 most common words
 SD_COUNT = {} # format: {"subdomain": count, ...}
-U_PAGES = set()  # Parsed urls
+U_PAGES = {}  # Parsed urls
 
 
 def scraper(url, resp) -> list:
@@ -44,7 +44,6 @@ def extract_next_links(url, resp):
             link = soup_url.get('href')
             if link not in found_links:
                 found_links.append(link)
-                PAGES.append(link)
 
     return found_links
 
@@ -87,6 +86,15 @@ def update_freq(tokens) -> None:
         except KeyError:
             FREQ_DICT[token] = 1
 
+    with open('top50.txt', 'w') as f:
+        f.write("Top 50 Words:\n")
+        items = sorted(FREQ_DICT.items(), key = lambda token: token[1], reverse = True)[0:50]
+        for word in items:
+            try:
+                f.write(f"{word[0]}: {word[1]}\n")
+            except IndexError:
+                break
+
 def update_longest_page(content, page) -> None:
     #Update the longest page found using global variables
     global LONGEST_PAGE
@@ -94,40 +102,12 @@ def update_longest_page(content, page) -> None:
     curr_len = len(tokenizer(content, allow_stop_words=True))
 
     if not LONGEST_PAGE:
-        LONGEST_PAGE = [page, curr_len]
+        LONGEST_PAGE = (page, curr_len)
     elif curr_len > LONGEST_PAGE[1]:
-            LONGEST_PAGE = [page, curr_len]
+        LONGEST_PAGE = (page, curr_len)
 
-def create_report() -> None:
-    """Creates a report on pages scraped"""
-    global SD_COUNT
-    global LONGEST_PAGE
-
-    with open('report.txt', 'w') as f:
-        f.write("Report of Final Scraper Findings\n\n")
-
-        # Number of unique pages found
-        f.write(f"Number of unique pages found: {len(U_PAGES)}\n\n")
-
-        # Longest page in terms of words
-        f.write("Longest page in terms of number of words:\n")
-        f.write(f"\tPage: {LONGEST_PAGE[0].url}\n")
-        f.write(f"\tLength: {LONGEST_PAGE[1]}\n\n")
-
-        # Top fifty most common words found
-        top_fifty_words = sorted( [(word, freq) for word, freq in FREQ_DICT.items()], key=lambda token: token[1], reverse = True )[0:50] 
-        # items = sorted(FREQ_DICT.items(), key=lambda token: token[1], reverse=True)
-        f.write("50 most commont words:\n")
-        for item in top_fifty_words:
-            f.write(f"\t{item[0]}: {item[1]}\n")
-
-        # Number of ics.uci.edu subdomains found and their count
-        sd_list = sorted( [(sd, freq) for sd, freq in SD_COUNT.items()], key=lambda sd: sd[0] )  # convert SD_COUNT
-        f.write(f"\nNumber of subdomains: {len(sd_list)}")
-        f.write("List of subdomains found:\n")
-        for sd in sd_list:
-            f.write(f"\t{sd[0]}: {sd[1]}\n")
-
+    with open('longest.txt', 'w') as f:
+        f.write(f"Longest page: {LONGEST_PAGE[0]}\nLength: {LONGEST_PAGE[1]}")
 
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
@@ -191,6 +171,10 @@ def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
                 subdomain_count[hostname] += 1
             else:
                 subdomain_count[hostname] = 1
+            with open('subdomains.txt', 'w') as f:
+                f.write(f"# of subdomains: {len(subdomain_count)}\n")
+                for sd, freq in subdomain_count.items:
+                    f.write(f"\t{sd}: {freq}\n")
             return True
     return False
 
@@ -223,6 +207,8 @@ def check_uniqueness(parsed_url, unique_pages):
 
     if unique:
         unique_pages.add(parsed_url)
+        with open('unique.txt', 'w') as f:
+            f.write(f'Amount of unique pages: {len(unique_pages)}')
 
     return unique
 
