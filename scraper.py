@@ -173,7 +173,7 @@ def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
                 subdomain_count[hostname] = 1
             with open('subdomains.txt', 'w') as f:
                 f.write(f"# of subdomains: {len(subdomain_count)}\n")
-                for sd, freq in subdomain_count.items:
+                for sd, freq in subdomain_count.items():
                     f.write(f"\t{sd}: {freq}\n")
             return True
     return False
