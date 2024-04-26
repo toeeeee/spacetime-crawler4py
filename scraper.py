@@ -15,6 +15,11 @@ U_PAGES = set()  # Parsed urls
 
 
 def scraper(url, resp) -> list:
+    # make an SQL database at the beginning of the program to store hash values of website contents
+    db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
+    cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
+    cur.execute("CREATE TABLE pages(hash)")  # create the 'pages' table of hash values
+    cur.close()  # close connection
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
@@ -51,7 +56,6 @@ def extract_next_links(url, resp):
         #   If it does exist, then this is an exact duplicate page
         db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
         cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
-        cur.execute("CREATE TABLE pages(hash)")  # create the 'pages' table of hash values
         cur.execute("SELECT hash FROM pages WHERE hash=?", (hs))  # check if hash already exists in table
         if cur.fetchone():  # hash already in db, meaning this is a duplicate page; skip it
             return found_links
@@ -71,6 +75,7 @@ def extract_next_links(url, resp):
                 if link not in found_links:
                     found_links.append(link)
 
+    cur.close()  # close connection to SQL db
     return found_links
 
 
