@@ -191,6 +191,13 @@ def string_to_binary_hash(string):
     binary_hash = binary_hash[:8].zfill(8)
     return binary_hash
 
+def list_to_binary_hash(string_list):
+    binary_hashes = []
+    for string in string_list:
+        binary_hash = string_to_binary_hash(string)
+        binary_hashes.append(binary_hash)
+    return binary_hashes
+
 
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
