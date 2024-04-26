@@ -6,9 +6,16 @@ from bs4 import BeautifulSoup as BS
 
 
 # SCRAPER GLOBAL VARIABLES
-LONGEST_PAGE = ()  # ( format: page, number of words ) the page with greatest number of words
+LONGEST_PAGE = ()  # ( format: page, number of words ) the page with the greatest number of words
 FREQ_DICT = {}  # dict of word-frequency pairs
-STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours"] # list of words that will not be considered for the top 50 most common words
+STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours",
+              "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should",
+              "shouldn't", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them",
+              "themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've",
+              "this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't", "we", "we'd",
+              "we'll", "we're", "we've", "were", "weren't", "what", "what's", "when", "when's", "where", "which", "while",
+              "who", "whom", "why", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll",
+              "you're", "you've", "your", "yours", "yourself", "yourselves"] # list of words that will not be considered for the top 50 most common words
 SD_COUNT = {} # format: {"subdomain": count, ...}
 U_PAGES = set()  # Parsed urls
 
@@ -38,6 +45,10 @@ def extract_next_links(url, resp):
         page_content = resp.raw_response.content
         soup = BS(page_content, 'html.parser')
         tokens = tokenizer(str(soup.get_text()))  # tokenize the current page
+
+        if len(tokens) < 25: #if the page is empty/low content
+            return []
+
         update_freq(tokens)  # update the token frequency dictionary
         update_longest_page(str(soup.get_text()), resp.raw_response.url)  # update the longest page found
         for soup_url in soup.find_all('a'):
@@ -58,7 +69,7 @@ def tokenizer(content, allow_stop_words=False) -> list:
         text = str(char)
         if not text:
             if not allow_stop_words:
-                if new_token and new_token not in STOP_WORDS:
+                if new_token and new_token not in STOP_WORDS and len(new_token) > 1 and not(new_token.isdigit()):
                     tokens.append(new_token)
                     break
             else:
@@ -69,7 +80,7 @@ def tokenizer(content, allow_stop_words=False) -> list:
             new_token += text.lower()
         else:
             if not allow_stop_words:
-                if new_token and new_token not in STOP_WORDS:
+                if new_token and new_token not in STOP_WORDS and len(new_token) > 1 and not(new_token.isdigit()):
                     tokens.append(new_token)
             else:
                 if new_token:
@@ -138,7 +149,7 @@ def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz|odc)$", parsed.path.lower())
 
     except TypeError:
         print("TypeError for ", parsed)
