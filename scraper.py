@@ -20,6 +20,7 @@ def scraper(url, resp) -> list:
     cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
     cur.execute("CREATE TABLE pages(hash)")  # create the 'pages' table of hash values
     cur.close()  # close connection
+    
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
@@ -44,9 +45,9 @@ def extract_next_links(url, resp):
         soup = BS(page_content, 'html.parser')
         
         # pre-process page_content for same-page and similar-page detection
-        plain_text = str(soup.get_text())  # plain text of the page contents (gets rid of HTML elements)
-        plain_text = plain_text.strip().lower()  # remove leading & trailing whitespace, & lowercase all chars
-        normalized_text = re.sub(r'\s+', ' ', plain_text)  # sequences of whitespace replaced with one space
+        plain_text = str(soup.get_text())  # plain text of the page contents (remove HTML elements)
+        plain_text = plain_text.strip().lower() # remove leading & trailing whitespace; lowercase chars
+        normalized_text = re.sub(r'\s+', ' ', plain_text)  # whitespace sequences replaced w/ one space
         """CREDIT: had trouble with getting hash, until I found this page that used .encode() method: https://stackoverflow.com/questions/42200117/unable-to-get-a-sha256-hash-of-a-string"""
         hs = hashlib.sha256(normalized_text.encode('utf-8')).hexdigest()  # get the sha-256 hash of the page's contents
 
