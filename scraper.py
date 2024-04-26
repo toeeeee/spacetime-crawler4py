@@ -184,6 +184,14 @@ def update_longest_page(content, page) -> None:
     with open('longest.txt', 'w') as f:  # re-evaluate the longest page encountered by the crawler as new pages are iterated over; save this info to a separate txt file in case of server crashes/bugs crashing the program
         f.write(f"Longest page: {LONGEST_PAGE[0]}\nLength: {LONGEST_PAGE[1]}")
 
+#SIMHASHING DONE BELOW--------------------------------------------------------------------------------------------------------------------------------
+def string_to_binary_hash(string):
+    hash_value = hashlib.sha256(string.encode()).hexdigest()
+    binary_hash = bin(int(hash_value, 16))[2:]
+    binary_hash = binary_hash[:8].zfill(8)
+    return binary_hash
+
+
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
