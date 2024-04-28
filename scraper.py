@@ -198,6 +198,17 @@ def list_to_binary_hash(string_list):
         binary_hashes.append(binary_hash)
     return binary_hashes
 
+def count_digit(token_freq):
+    data_for_fingerprint = []
+    for x in range(10):
+        bit_sum = 0
+        for key, value in token_freq.items():
+            if get_digit(key, x) > 0:
+                bit_sum += value
+            else:
+                bit_sum -= value
+        data_for_fingerprint.append(bit_sum)
+    return data_for_fingerprint
 
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
