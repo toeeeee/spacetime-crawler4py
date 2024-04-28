@@ -227,6 +227,20 @@ def generate_fingerprint(list):
             fingerprint.append(0)
     return fingerprint
 
+#if its similar return true, else return false
+def compare_fingerprint(previous_hash, new_fingerprint):
+    #see how many bits are the same from the first fingerprint to the second
+    similarity_score = 0
+    threshold = 0.85
+    for x in range(10):
+        if previous_hash[x] == new_fingerprint[x]:
+            similarity_score += 1
+    print("Similarity Score: ", similarity_score/10)
+    if similarity_score/10 > threshold:
+        print("PASS", similarity_score, threshold)
+        return True
+    return False
+
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
