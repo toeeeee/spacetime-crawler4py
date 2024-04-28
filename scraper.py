@@ -218,6 +218,15 @@ def count_digit(token_freq):
 def get_digit(number, n):
     return number // 10**n % 10
 
+def generate_fingerprint(list):
+    fingerprint = []
+    for value in list:
+        if value > 0:
+            fingerprint.append(1)
+        else:
+            fingerprint.append(0)
+    return fingerprint
+
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
