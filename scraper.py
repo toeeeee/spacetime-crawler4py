@@ -242,6 +242,23 @@ def compare_fingerprint(previous_hash, new_fingerprint):
     return False
 
 
+#handles calendar webpages/ blogs/ events
+#values of the binary are reversed, that means the data originally is 1-2-3-4-5, but our fingerprint is stored as 5-4-3-2-1
+#if you want to access these values, start from the beginning of the fingerprint (but know that that's the last hash)
+def sim_hash(filePath, previous_hash):
+    tokens = list_to_binary_hash(Tokenize(filePath))
+    token_freq = computeWordFrequencies(tokens)
+    fingerprint = generate_fingerprint(count_digit(token_freq))
+    
+    print(previous_hash)
+    print(fingerprint)
+    if compare_fingerprint(previous_hash, fingerprint) == True:
+        print("Similar")
+        return True
+    print("Not Similar")
+    return False
+
+
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
     """
