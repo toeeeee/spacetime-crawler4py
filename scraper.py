@@ -185,6 +185,8 @@ def update_longest_page(content, page) -> None:
         f.write(f"Longest page: {LONGEST_PAGE[0]}\nLength: {LONGEST_PAGE[1]}")
 
 #SIMHASHING DONE BELOW--------------------------------------------------------------------------------------------------------------------------------
+
+
 def string_to_binary_hash(string):
     hash_value = hashlib.sha256(string.encode()).hexdigest()
     binary_hash = bin(int(hash_value, 16))[2:]
@@ -209,6 +211,12 @@ def count_digit(token_freq):
                 bit_sum -= value
         data_for_fingerprint.append(bit_sum)
     return data_for_fingerprint
+
+# The // performs integer division by a power of ten to move the digit to the ones position, 
+# then the % gets the remainder after division by 10.
+# Note that the numbering in this scheme uses zero-indexing and starts from the right side of the number.
+def get_digit(number, n):
+    return number // 10**n % 10
 
 
 #IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
