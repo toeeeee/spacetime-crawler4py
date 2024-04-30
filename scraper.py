@@ -20,7 +20,10 @@ def make_db():
     if not DB_MADE:
         db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
         cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
-        cur.execute("CREATE TABLE pages(hash);")  # create the 'pages' table of hash values
+        try:
+            cur.execute("CREATE TABLE pages(hash);")  # create the 'pages' table of hash values
+        except sqlite3.OperationalError:
+            pass
         cur.close()
         DB_MADE = True
     else:
