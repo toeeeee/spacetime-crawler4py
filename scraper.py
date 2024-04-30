@@ -13,7 +13,7 @@ FREQ_DICT = {}  # dict of word-frequency pairs
 STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them","themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've","this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't", "we", "we'd","we'll", "we're", "we've", "were", "weren't", "what", "what's", "when", "when's", "where", "which", "while","who", "whom", "why", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"] # list of words that will not be considered for the top 50 most common words
 SD_COUNT = {}  # format: {"subdomain": count, ...}
 U_PAGES = set()  # Parsed urls
-PREVIOUS_HASH = 0000000000
+PREVIOUS_HASH = [] # Hash where each int is an element of a binary number
 
 def make_db():
     global DB_MADE
@@ -203,6 +203,7 @@ def generate_fingerprint(list):
 #if its similar return true, else return false
 def compare_fingerprint(previous_hash, new_fingerprint):
     #see how many bits are the same from the first fingerprint to the second
+    global PREVIOUS_HASH
     similarity_score = 0
     threshold = 0.85
     for x in range(10):
@@ -210,6 +211,7 @@ def compare_fingerprint(previous_hash, new_fingerprint):
             similarity_score += 1
     if similarity_score/10 > threshold:
         return True
+    PREVIOUS_HASH = new_fingerprint
     return False
 
 
