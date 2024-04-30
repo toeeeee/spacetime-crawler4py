@@ -185,7 +185,12 @@ def update_longest_page(content, page) -> None:
         f.write(f"Longest page: {LONGEST_PAGE[0]}\nLength: {LONGEST_PAGE[1]}")
 
 #SIMHASHING DONE BELOW--------------------------------------------------------------------------------------------------------------------------------
+'''
+Member Variables:
+FREQ_DICT
+tokens
 
+'''
 
 def string_to_binary_hash(string):
     hash_value = hashlib.sha256(string.encode()).hexdigest()
@@ -199,6 +204,14 @@ def list_to_binary_hash(string_list):
         binary_hash = string_to_binary_hash(string)
         binary_hashes.append(binary_hash)
     return binary_hashes
+
+def computeWordFrequencies(tokens) -> dict :  # return frequencies of file's tokens
+    instances = {} # dict of frequencies of words in the given text file
+    for token in tokens:
+        if token not in instances:
+            instances[token] = 0
+        instances[token] += 1
+    return instances
 
 def count_digit(token_freq):
     data_for_fingerprint = []
@@ -235,9 +248,8 @@ def compare_fingerprint(previous_hash, new_fingerprint):
     for x in range(10):
         if previous_hash[x] == new_fingerprint[x]:
             similarity_score += 1
-    print("Similarity Score: ", similarity_score/10)
+
     if similarity_score/10 > threshold:
-        print("PASS", similarity_score, threshold)
         return True
     return False
 
@@ -245,13 +257,11 @@ def compare_fingerprint(previous_hash, new_fingerprint):
 #handles calendar webpages/ blogs/ events
 #values of the binary are reversed, that means the data originally is 1-2-3-4-5, but our fingerprint is stored as 5-4-3-2-1
 #if you want to access these values, start from the beginning of the fingerprint (but know that that's the last hash)
-def sim_hash(filePath, previous_hash):
-    tokens = list_to_binary_hash(Tokenize(filePath))
+def sim_hash(previous_hash):
+    tokens = list_to_binary_hash(tokens)
     token_freq = computeWordFrequencies(tokens)
     fingerprint = generate_fingerprint(count_digit(token_freq))
     
-    print(previous_hash)
-    print(fingerprint)
     if compare_fingerprint(previous_hash, fingerprint) == True:
         print("Similar")
         return True
