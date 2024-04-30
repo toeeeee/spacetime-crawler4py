@@ -51,66 +51,35 @@ def extract_next_links(url, resp):
     if resp.status != 200:
         return found_links
     else:
-        
         # Get the html content of the page
         # Using BeautifulSoup to parse the html, and then find all the links within it
         page_content = resp.raw_response.content
         soup = BS(page_content, 'html.parser')
         
-        # pre-process page_content for same-page and similar-page detection
-        plain_text = str(soup.get_text())  # plain text of the page contents (gets rid of HTML elements)
-        plain_text = plain_text.strip().lower()  # remove leading & trailing whitespace, & lowercase all chars
-        normalized_text = re.sub(r'\s+', ' ', plain_text)  # sequences of whitespace replaced with one space
-        """CREDIT: had trouble with getting hash, until I found this page that used .encode() method: https://stackoverflow.com/questions/42200117/unable-to-get-a-sha256-hash-of-a-string"""
-        hs = hashlib.sha256(normalized_text.encode('utf-8')).hexdigest()  # get the sha-256 hash of the page's contents
-
-        # SAME-PAGE DETECTION
-        # store the hash into an SQL database, checking to make sure the same hash doesn't already exist
-        #   If it does exist, then this is an exact duplicate page
-        db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
-        cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
-        cur.execute("SELECT hash FROM pages WHERE hash=?;", (hs))  # check if hash already exists in table
-
-        fetched = cur.fetchone()
-        #tests whether hash was found
-        f = open("fetchfile.txt", "a")
-        f.write("Hash Found? " + str(fetched) + "\n")
-        f.close()
         
-        if fetched:  # hash already in db, meaning this is a duplicate page; skip it
-            return found_links
-        else:
-            tokens = tokenizer(normalized_text)  # tokenize the current page
-            file = open("SimHashLog.txt", "a")
-            if(sim_hash(tokens, PREVIOUS_HASH)):
-                cur.close()
-                file.write(f"{resp.raw_response.url} : Page Similar")
-                file.close()
-                return found_links
-            file.write(f"{resp.raw_response.url} : Page Not Similar")
+        tokens = tokenizer(normalized_text)  # tokenize the current page
+        file = open("SimHashLog.txt", "a")
+        if(sim_hash(tokens, PREVIOUS_HASH)):
+            cur.close()
+            file.write(f"{resp.raw_response.url} : Page Similar")
             file.close()
+            return found_links
+        file.write(f"{resp.raw_response.url} : Page Not Similar")
+        file.close()
             
-            cur.execute("INSERT INTO pages VALUES ?", (hs))  # insert the page's hs (hash value) into the 'pages' table SQL database
-            
-            cur.commit()  # commit the change into the database
 
-            #creates file with hashes stored
-            f = open("hash_stored.txt", "a")
-            f.write("Hash Stored: " + hs + "\n")
-            f.close()
             
             
-            if len(tokens) < 25:  # if the page is empty/low content
-                return found_links
+        if len(tokens) < 25:  # if the page is empty/low content
+            return found_links
 
-            update_freq(tokens)  # update the token frequency dictionary
-            update_longest_page(normalized_text, resp.raw_response.url)  # update the longest page found
-            for soup_url in soup.find_all('a'):
-                link = soup_url.get('href')
-                if link not in found_links:
-                    found_links.append(link)
+        update_freq(tokens)  # update the token frequency dictionary
+        update_longest_page(normalized_text, resp.raw_response.url)  # update the longest page found
+        for soup_url in soup.find_all('a'):
+            link = soup_url.get('href')
+            if link not in found_links:
+                found_links.append(link)
                     
-    cur.close()
     return found_links
 
 
