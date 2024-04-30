@@ -206,6 +206,8 @@ def compare_fingerprint(previous_hash, new_fingerprint):
     global PREVIOUS_HASH
     similarity_score = 0
     threshold = 0.85
+    print(previous_hash)
+    print(new_fingerprint)
     for x in range(10):
         if previous_hash[x] == new_fingerprint[x]:
             similarity_score += 1
