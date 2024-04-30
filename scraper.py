@@ -296,6 +296,7 @@ def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
                 subdomain_count[hostname] += 1
             else:
                 subdomain_count[hostname] = 1
+            subdomain_count.pop("ics.uci.edu", None) #scuffed ass solution but its okay
             with open('subdomains.txt', 'w') as f:  # note the subdomains crawled over and how often they were encountered; save this info to a separate txt file in case of server crashes/bugs crashing the program
                 f.write(f"# of subdomains: {len(subdomain_count)}\n")
                 for sd, freq in subdomain_count.items():
