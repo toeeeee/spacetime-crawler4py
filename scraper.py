@@ -67,10 +67,10 @@ def extract_next_links(url, resp):
         
         file = open("SimHashLog.txt", "a")
         if sim_hash(PREVIOUS_HASH, tokens):
-            file.write(f"{resp.raw_response.url} : Page Similar")
+            file.write(f"{resp.raw_response.url} : Page Similar\n")
             file.close()
             return found_links
-        file.write(f"{resp.raw_response.url} : Page Not Similar")
+        file.write(f"{resp.raw_response.url} : Page Not Similar\n")
         file.close()
             
 
@@ -219,6 +219,7 @@ def compare_fingerprint(previous_hash, new_fingerprint):
 def sim_hash(previous_hash, tokens):
     hash_tokens = list_to_binary_hash(tokens)
     token_freq = computeWordFrequencies(hash_tokens)
+    print(token_freq)
     fingerprint = generate_fingerprint(count_digit(token_freq))
     if compare_fingerprint(previous_hash, fingerprint) == True:
         return True
