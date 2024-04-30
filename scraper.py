@@ -7,18 +7,28 @@ from urllib.parse import urlparse, parse_qs
 
 
 # SCRAPER GLOBAL VARIABLES
+DB_MADE = False # changes to True after first runthrough
 LONGEST_PAGE = ()  # ( format: page, number of words ) the page with the greatest number of words
 FREQ_DICT = {}  # dict of word-frequency pairs
 STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them","themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've","this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't", "we", "we'd","we'll", "we're", "we've", "were", "weren't", "what", "what's", "when", "when's", "where", "which", "while","who", "whom", "why", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"] # list of words that will not be considered for the top 50 most common words
 SD_COUNT = {}  # format: {"subdomain": count, ...}
 U_PAGES = set()  # Parsed urls
-PREVIOUS_HASH = 0000000000
+PREVIOUS_HASH = None
+
+def make_db():
+    global DB_MADE
+    if not DB_MADE:
+        db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
+        cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
+        cur.execute("CREATE TABLE pages(hash)")  # create the 'pages' table of hash values
+        cur.close()
+        DB_MADE = True
+    else:
+        return
+
 
 def scraper(url, resp) -> list:
-    db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
-    cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
-    cur.execute("CREATE TABLE pages(hash)")  # create the 'pages' table of hash values
-    cur.close()
+    make_db()
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
@@ -52,7 +62,6 @@ def extract_next_links(url, resp):
         hs = hashlib.sha256(normalized_text.encode('utf-8')).hexdigest()  # get the sha-256 hash of the page's contents
 
         # SAME-PAGE DETECTION
-        """TODO: similar-page detection and confirming if same-page detection code below works"""
         # store the hash into an SQL database, checking to make sure the same hash doesn't already exist
         #   If it does exist, then this is an exact duplicate page
         db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
@@ -68,11 +77,16 @@ def extract_next_links(url, resp):
         if fetched:  # hash already in db, meaning this is a duplicate page; skip it
             return found_links
         else:
-
             tokens = tokenizer(normalized_text)  # tokenize the current page
+            file = open("SimHashLog.txt", "a")
             if(sim_hash(tokens, PREVIOUS_HASH)):
                 cur.close()
+                file.write(f"{resp.raw_response.url} : Page Similar")
+                file.close()
                 return found_links
+            file.write(f"{resp.raw_response.url} : Page Not Similar")
+            file.close()
+            
             cur.execute("INSERT INTO pages VALUES ?", (hs))  # insert the page's hs (hash value) into the 'pages' table SQL database
             
             cur.commit()  # commit the change into the database
@@ -221,7 +235,6 @@ def compare_fingerprint(previous_hash, new_fingerprint):
     for x in range(10):
         if previous_hash[x] == new_fingerprint[x]:
             similarity_score += 1
-
     if similarity_score/10 > threshold:
         return True
     return False
@@ -234,11 +247,8 @@ def sim_hash(previous_hash, tokens):
     hash_tokens = list_to_binary_hash(tokens)
     token_freq = computeWordFrequencies(hash_tokens)
     fingerprint = generate_fingerprint(count_digit(token_freq))
-    
     if compare_fingerprint(previous_hash, fingerprint) == True:
-        print("Similar")
         return True
-    print("Not Similar")
     return False
 
 
