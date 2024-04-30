@@ -85,40 +85,7 @@ def extract_next_links(url, resp):
                 link = soup_url.get('href')
                 if link not in found_links:
                     found_links.append(link)
-        
-        # pre-process page_content for same-page and similar-page detection
-        plain_text = str(soup.get_text())  # plain text of the page contents (gets rid of HTML elements)
-        plain_text = plain_text.strip().lower()  # remove leading & trailing whitespace, & lowercase all chars
-        normalized_text = re.sub(r'\s+', ' ', plain_text)  # sequences of whitespace replaced with one space
-        """CREDIT: had trouble with getting hash, until I found this page that used .encode() method: https://stackoverflow.com/questions/42200117/unable-to-get-a-sha256-hash-of-a-string"""
-        hs = hashlib.sha256(normalized_text.encode('utf-8')).hexdigest()  # get the sha-256 hash of the page's contents
-
-        # SAME-PAGE DETECTION
-        """TODO: similar-page detection and confirming if same-page detection code below works"""
-        # store the hash into an SQL database, checking to make sure the same hash doesn't already exist
-        #   If it does exist, then this is an exact duplicate page
-        db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
-        cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
-        cur.execute("CREATE TABLE pages(hash)")  # create the 'pages' table of hash values
-        cur.execute("SELECT hash FROM pages WHERE hash=?", (hs))  # check if hash already exists in table
-        if cur.fetchone():  # hash already in db, meaning this is a duplicate page; skip it
-            return found_links
-        else:
-            cur.execute("INSERT INTO pages VALUES ?", (hs))  # insert the page's hs (hash value) into the 'pages' table SQL database
-            cur.commit()  # commit the change into the database
-
-            tokens = tokenizer(normalized_text)  # tokenize the current page
-
-            if len(tokens) < 25:  # if the page is empty/low content
-                return found_links
-
-            update_freq(tokens)  # update the token frequency dictionary
-            update_longest_page(normalized_text, resp.raw_response.url)  # update the longest page found
-            for soup_url in soup.find_all('a'):
-                link = soup_url.get('href')
-                if link not in found_links:
-                    found_links.append(link)
-
+                    
     curr.close()
     return found_links
 
@@ -193,7 +160,7 @@ tokens
 
 def string_to_binary_hash(string):
     hash_value = hashlib.sha256(string.encode()).hexdigest()
-    binary_hash = bin(int(hash_value, 16))[2:]
+    binary_hash = bin(int(hash_value, 16))[2:] # remove header of binary string
     binary_hash = binary_hash[:10].zfill(10)
     return binary_hash
 
