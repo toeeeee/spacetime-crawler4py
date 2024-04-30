@@ -61,6 +61,10 @@ def extract_next_links(url, resp):
         normalized_text = re.sub(r'\s+', ' ', plain_text)  # sequences of whitespace replaced with one space
         
         tokens = tokenizer(normalized_text)  # tokenize the current page
+
+        if len(tokens) < 25:  # if the page is empty/low content
+            return found_links
+        
         file = open("SimHashLog.txt", "a")
         if(sim_hash(tokens, PREVIOUS_HASH)):
             cur.close()
@@ -70,10 +74,6 @@ def extract_next_links(url, resp):
         file.write(f"{resp.raw_response.url} : Page Not Similar")
         file.close()
             
-            
-            
-        if len(tokens) < 25:  # if the page is empty/low content
-            return found_links
 
         update_freq(tokens)  # update the token frequency dictionary
         update_longest_page(normalized_text, resp.raw_response.url)  # update the longest page found
