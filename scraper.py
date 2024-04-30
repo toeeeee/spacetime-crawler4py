@@ -67,7 +67,6 @@ def extract_next_links(url, resp):
         
         file = open("SimHashLog.txt", "a")
         if sim_hash(PREVIOUS_HASH, tokens):
-            cur.close()
             file.write(f"{resp.raw_response.url} : Page Similar")
             file.close()
             return found_links
