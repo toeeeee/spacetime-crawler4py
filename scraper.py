@@ -203,17 +203,13 @@ def generate_fingerprint(list):
 #if its similar return true, else return false
 def compare_fingerprint(previous_hash, new_fingerprint):
     #see how many bits are the same from the first fingerprint to the second
-    global PREVIOUS_HASH
     similarity_score = 0
     threshold = 0.85
-    print(previous_hash)
-    print(new_fingerprint)
     for x in range(10):
         if previous_hash[x] == new_fingerprint[x]:
             similarity_score += 1
     if similarity_score/10 > threshold:
         return True
-    PREVIOUS_HASH = new_fingerprint
     return False
 
 
@@ -221,12 +217,16 @@ def compare_fingerprint(previous_hash, new_fingerprint):
 #values of the binary are reversed, that means the data originally is 1-2-3-4-5, but our fingerprint is stored as 5-4-3-2-1
 #if you want to access these values, start from the beginning of the fingerprint (but know that that's the last hash)
 def sim_hash(previous_hash, tokens):
+    global PREVIOUS_HASH
+
     hash_tokens = list_to_binary_hash(tokens)
     token_freq = computeWordFrequencies(hash_tokens)
     #print(token_freq)
     fingerprint = generate_fingerprint(count_digit(token_freq))
-    if compare_fingerprint(previous_hash, fingerprint) == True:
-        return True
+    if PREVIOUS_HASH:
+        if compare_fingerprint(previous_hash, fingerprint) == True:
+            return True
+    PREVIOUS_HASH = new_fingerprint
     return False
 
 
