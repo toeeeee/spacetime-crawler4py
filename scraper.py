@@ -60,7 +60,7 @@ def extract_next_links(url, resp):
         plain_text = plain_text.strip().lower()  # remove leading & trailing whitespace, & lowercase all chars
         normalized_text = re.sub(r'\s+', ' ', plain_text)  # sequences of whitespace replaced with one space
         
-        tokens = tokenizer(normalized_text)  # tokenize the current page
+        tokens = tokenizer(plain_text)  # tokenize the current page
 
         if len(tokens) < 25:  # if the page is empty/low content
             return found_links
