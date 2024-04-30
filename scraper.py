@@ -226,7 +226,7 @@ def sim_hash(previous_hash, tokens):
     if PREVIOUS_HASH:
         if compare_fingerprint(previous_hash, fingerprint) == True:
             return True
-    PREVIOUS_HASH = new_fingerprint
+    PREVIOUS_HASH = fingerprint
     return False
 
 
