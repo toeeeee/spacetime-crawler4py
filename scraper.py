@@ -15,14 +15,39 @@ U_PAGES = set()  # Parsed urls
 
 
 def scraper(url, resp) -> list:
-    # make an SQL database at the beginning of the program to store hash values of website contents
-    db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
+    # create an SQL database at the beginning of the program and close it; the only purpose here is to create it for future use
+    db = sqlite3.connect('hashes.db')  # create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
     cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
     cur.execute("CREATE TABLE pages(hash)")  # create the 'pages' table of hash values
     cur.close()  # close connection
-    
+
     links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
+    lst = [link for link in links if is_valid(link)]
+
+    # create 'report.txt'
+    with open('report.txt', 'w') as report:
+        report.write(f"Report of crawler findings:\n---\n\n")
+        with open('unique.txt', 'r') as unique:  # How many unique pages did you find?
+            report.write(f"{unique.read()}\n\n")
+        
+        with open('longest.txt', 'r') as longest_page:  # What is the longest page in terms of the number of words?
+            longest_page = longest_page.readlines()
+            report.write(f"{longest_page[0]}\n{longest_page[1]}\n\n")
+        
+        with open('top50.txt', 'r') as common_words:  # What are the 50 most common words found?
+            top_50 = common_words.readlines()[1:]
+            report.write(f"Top 50 words:\n")
+            for line in top_50:
+                report.write(f"\t{line}\n")
+        
+        with open('subdomains.txt', 'r') as subdomains:  # How many subdomains did you find in the ics.uci.edu domain?
+            subdomains = subdomains.readlines()
+            subdomains = sorted(subdomains)  # sort them alphabetically
+            for line in subdomains:
+                report.write(f"\t{line}\n")
+
+
+    return lst
 
 
 def extract_next_links(url, resp):
@@ -52,21 +77,32 @@ def extract_next_links(url, resp):
         hs = hashlib.sha256(normalized_text.encode('utf-8')).hexdigest()  # get the sha-256 hash of the page's contents
 
         # SAME-PAGE DETECTION
-        """TODO: similar-page detection and confirming if same-page detection code below works"""
         # store the hash into an SQL database, checking to make sure the same hash doesn't already exist
-        #   If it does exist, then this is an exact duplicate page
         db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
         cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
         cur.execute("SELECT hash FROM pages WHERE hash=?", (hs))  # check if hash already exists in table
+        
+        #tests whether hash was found (write to file to check later)
+        with open("fetchfile.txt", "w") as f:
+            f.write(f"Hash already in db? {str(cur.fetchone())}\n")
+        
         if cur.fetchone():  # hash already in db, meaning this is a duplicate page; skip it
             return found_links
         else:
             cur.execute("INSERT INTO pages VALUES ?", (hs))  # insert the page's hs (hash value) into the 'pages' table SQL database
             cur.commit()  # commit the change into the database
 
+            #creates file with hashes stored for testing/debugging purposes
+            with open("hash_stored.txt", "a") as f:
+                f.write(f"Hash Stored: {hs}\n")
+            
             tokens = tokenizer(normalized_text)  # tokenize the current page
+            unique_words = set(tokens)
 
+            # TODO: use simhashing to figure out if a page is low content
             if len(tokens) < 25:  # if the page is empty/low content
+                return found_links
+            if (len(unique_words) / len(tokens)) > 0.6:  # stop if there are very few unique words
                 return found_links
 
             update_freq(tokens)  # update the token frequency dictionary
@@ -76,7 +112,7 @@ def extract_next_links(url, resp):
                 if link not in found_links:
                     found_links.append(link)
 
-    cur.close()  # close connection to SQL db
+        cur.close()
     return found_links
 
 
@@ -119,8 +155,8 @@ def update_freq(tokens) -> None:
             FREQ_DICT[token] = 1
 
     with open('top50.txt', 'w') as f:  # as words are added to the dictionary, re-evaluate the 50 words encountered most frequently while crawling; save this info to a separate txt file in case of server crashes/bugs crashing the program
-        f.write("Top 50 Words:\n")
         items = sorted(FREQ_DICT.items(), key = lambda token: token[1], reverse = True)[0:50]
+        f.write("Top 50 Words:")
         for word in items:
             try:
                 f.write(f"{word[0]}: {word[1]}\n")
@@ -142,7 +178,7 @@ def update_longest_page(content, page) -> None:
         f.write(f"Longest page: {LONGEST_PAGE[0]}\nLength: {LONGEST_PAGE[1]}")
 
 
-#IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
+# IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
 def is_valid(url, subdomain_count = SD_COUNT, unique_pages = U_PAGES) -> bool:
     """
     Determines if URL is valid for scraping and returns boolean.
@@ -211,7 +247,7 @@ def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
             with open('subdomains.txt', 'w') as f:  # note the subdomains crawled over and how often they were encountered; save this info to a separate txt file in case of server crashes/bugs crashing the program
                 f.write(f"# of subdomains: {len(subdomain_count)}\n")
                 for sd, freq in subdomain_count.items():
-                    f.write(f"\t{sd}: {freq}\n")
+                    f.write(f"{sd}: {freq}\n")
             return True
     return False
 
