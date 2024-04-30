@@ -56,6 +56,9 @@ def extract_next_links(url, resp):
         page_content = resp.raw_response.content
         soup = BS(page_content, 'html.parser')
         
+        plain_text = str(soup.get_text())  # plain text of the page contents (gets rid of HTML elements)
+        plain_text = plain_text.strip().lower()  # remove leading & trailing whitespace, & lowercase all chars
+        normalized_text = re.sub(r'\s+', ' ', plain_text)  # sequences of whitespace replaced with one space
         
         tokens = tokenizer(normalized_text)  # tokenize the current page
         file = open("SimHashLog.txt", "a")
@@ -67,7 +70,6 @@ def extract_next_links(url, resp):
         file.write(f"{resp.raw_response.url} : Page Not Similar")
         file.close()
             
-
             
             
         if len(tokens) < 25:  # if the page is empty/low content
