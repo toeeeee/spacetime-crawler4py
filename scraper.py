@@ -12,7 +12,7 @@ FREQ_DICT = {}  # dict of word-frequency pairs
 STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them","themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've","this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't", "we", "we'd","we'll", "we're", "we've", "were", "weren't", "what", "what's", "when", "when's", "where", "which", "while","who", "whom", "why", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"] # list of words that will not be considered for the top 50 most common words
 SD_COUNT = {}  # format: {"subdomain": count, ...}
 U_PAGES = set()  # Parsed urls
-
+PREVIOUS_HASH = 0000000000
 
 def scraper(url, resp) -> list:
     db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
@@ -24,6 +24,7 @@ def scraper(url, resp) -> list:
 
 
 def extract_next_links(url, resp):
+    global PREVIOUS_HASH
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
     # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -37,6 +38,7 @@ def extract_next_links(url, resp):
     if resp.status != 200:
         return found_links
     else:
+        
         # Get the html content of the page
         # Using BeautifulSoup to parse the html, and then find all the links within it
         page_content = resp.raw_response.content
@@ -66,6 +68,11 @@ def extract_next_links(url, resp):
         if fetched:  # hash already in db, meaning this is a duplicate page; skip it
             return found_links
         else:
+
+            tokens = tokenizer(normalized_text)  # tokenize the current page
+            if(sim_hash(tokens, PREVIOUS_HASH)):
+                cur.close()
+                return found_links
             cur.execute("INSERT INTO pages VALUES ?", (hs))  # insert the page's hs (hash value) into the 'pages' table SQL database
             
             cur.commit()  # commit the change into the database
@@ -75,8 +82,7 @@ def extract_next_links(url, resp):
             f.write("Hash Stored: " + hs + "\n")
             f.close()
             
-            tokens = tokenizer(normalized_text)  # tokenize the current page
-
+            
             if len(tokens) < 25:  # if the page is empty/low content
                 return found_links
 
@@ -87,7 +93,7 @@ def extract_next_links(url, resp):
                 if link not in found_links:
                     found_links.append(link)
                     
-    curr.close()
+    cur.close()
     return found_links
 
 
@@ -224,7 +230,7 @@ def compare_fingerprint(previous_hash, new_fingerprint):
 #handles calendar webpages/ blogs/ events
 #values of the binary are reversed, that means the data originally is 1-2-3-4-5, but our fingerprint is stored as 5-4-3-2-1
 #if you want to access these values, start from the beginning of the fingerprint (but know that that's the last hash)
-def sim_hash(previous_hash):
+def sim_hash(previous_hash, tokens):
     hash_tokens = list_to_binary_hash(tokens)
     token_freq = computeWordFrequencies(hash_tokens)
     fingerprint = generate_fingerprint(count_digit(token_freq))
