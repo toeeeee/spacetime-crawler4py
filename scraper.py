@@ -56,13 +56,14 @@ def extract_next_links(url, resp):
         db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
         cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
         cur.execute("SELECT hash FROM pages WHERE hash=?", (hs))  # check if hash already exists in table
-        
+
+        fetched = cur.fetchone()
         #tests whether hash was found
         f = open("fetchfile.txt", "a")
-        f.write("Hash Found? " + str(cur.fetchone()) + "\n")
+        f.write("Hash Found? " + str(fetched) + "\n")
         f.close()
         
-        if cur.fetchone():  # hash already in db, meaning this is a duplicate page; skip it
+        if fetched:  # hash already in db, meaning this is a duplicate page; skip it
             return found_links
         else:
             cur.execute("INSERT INTO pages VALUES ?", (hs))  # insert the page's hs (hash value) into the 'pages' table SQL database
