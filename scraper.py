@@ -178,7 +178,7 @@ def count_digit(token_freq):
     for x in range(10):
         bit_sum = 0
         for key, value in token_freq.items():
-            if get_digit(key, x) > 0:
+            if get_digit(int(key), x) > 0:
                 bit_sum += value
             else:
                 bit_sum -= value
@@ -219,7 +219,7 @@ def compare_fingerprint(previous_hash, new_fingerprint):
 def sim_hash(previous_hash, tokens):
     hash_tokens = list_to_binary_hash(tokens)
     token_freq = computeWordFrequencies(hash_tokens)
-    print(token_freq)
+    #print(token_freq)
     fingerprint = generate_fingerprint(count_digit(token_freq))
     if compare_fingerprint(previous_hash, fingerprint) == True:
         return True
