@@ -12,45 +12,16 @@ FREQ_DICT = {}  # dict of word-frequency pairs
 STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and",  "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing","don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them","themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've","this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't", "we", "we'd","we'll", "we're", "we've", "were", "weren't", "what", "what's", "when", "when's", "where", "which", "while","who", "whom", "why", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"] # list of words that will not be considered for the top 50 most common words
 SD_COUNT = {}  # format: {"subdomain": count, ...}
 U_PAGES = set()  # Parsed urls
+PREVIOUS_HASH = [] # Hash where each int is an element of a binary number
 
 
 def scraper(url, resp) -> list:
-    # create an SQL database at the beginning of the program and close it; the only purpose here is to create it for future use
-    db = sqlite3.connect('hashes.db')  # create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
-    cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
-    cur.execute("CREATE TABLE pages(hash)")  # create the 'pages' table of hash values
-    cur.close()  # close connection
-
     links = extract_next_links(url, resp)
-    lst = [link for link in links if is_valid(link)]
-
-    # create 'report.txt'
-    with open('report.txt', 'w') as report:
-        report.write(f"Report of crawler findings:\n---\n\n")
-        with open('unique.txt', 'r') as unique:  # How many unique pages did you find?
-            report.write(f"{unique.read()}\n\n")
-        
-        with open('longest.txt', 'r') as longest_page:  # What is the longest page in terms of the number of words?
-            longest_page = longest_page.readlines()
-            report.write(f"{longest_page[0]}\n{longest_page[1]}\n\n")
-        
-        with open('top50.txt', 'r') as common_words:  # What are the 50 most common words found?
-            top_50 = common_words.readlines()[1:]
-            report.write(f"Top 50 words:\n")
-            for line in top_50:
-                report.write(f"\t{line}\n")
-        
-        with open('subdomains.txt', 'r') as subdomains:  # How many subdomains did you find in the ics.uci.edu domain?
-            subdomains = subdomains.readlines()
-            subdomains = sorted(subdomains)  # sort them alphabetically
-            for line in subdomains:
-                report.write(f"\t{line}\n")
-
-
-    return lst
+    return [link for link in links if is_valid(link)]
 
 
 def extract_next_links(url, resp):
+    global PREVIOUS_HASH
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
     # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
@@ -69,54 +40,38 @@ def extract_next_links(url, resp):
         page_content = resp.raw_response.content
         soup = BS(page_content, 'html.parser')
         
-        # pre-process page_content for same-page and similar-page detection
-        plain_text = str(soup.get_text())  # plain text of the page contents (remove HTML elements)
-        plain_text = plain_text.strip().lower() # remove leading & trailing whitespace; lowercase chars
-        normalized_text = re.sub(r'\s+', ' ', plain_text)  # whitespace sequences replaced w/ one space
-        """CREDIT: had trouble with getting hash, until I found this page that used .encode() method: https://stackoverflow.com/questions/42200117/unable-to-get-a-sha256-hash-of-a-string"""
-        hs = hashlib.sha256(normalized_text.encode('utf-8')).hexdigest()  # get the sha-256 hash of the page's contents
-
-        # SAME-PAGE DETECTION
-        # store the hash into an SQL database, checking to make sure the same hash doesn't already exist
-        db = sqlite3.connect('hashes.db')  # implicitly create 'hashes.db' database if it doesn't exist, and create a connection to the db in the current working directory
-        cur = db.cursor()  # make a cursor to execute SQL statements and fetch results from SQL queries
-        cur.execute("SELECT hash FROM pages WHERE hash=?", (hs))  # check if hash already exists in table
+        plain_text = str(soup.get_text())  # plain text of the page contents (gets rid of HTML elements)
+        plain_text = plain_text.strip().lower()  # remove leading & trailing whitespace, & lowercase all chars
+        normalized_text = re.sub(r'\s+', ' ', plain_text)  # sequences of whitespace replaced with one space
         
-        #tests whether hash was found (write to file to check later)
-        with open("fetchfile.txt", "w") as f:
-            f.write(f"Hash already in db? {str(cur.fetchone())}\n")
-        
-        if cur.fetchone():  # hash already in db, meaning this is a duplicate page; skip it
+        is_duplicate = check_db(normalized_text, resp.raw_response.url)  # do same-page check
+        if is_duplicate: # if True, then this page is a duplicate of one already crawled over
+            return []
+        # else, not a duplicate: continue processing the page
+        tokens = tokenizer(normalized_text)  # tokenize the current page
+        if len(tokens) < 25:  # if the page is empty/low content
             return found_links
-        else:
-            cur.execute("INSERT INTO pages VALUES ?", (hs))  # insert the page's hs (hash value) into the 'pages' table SQL database
-            cur.commit()  # commit the change into the database
-
-            #creates file with hashes stored for testing/debugging purposes
-            with open("hash_stored.txt", "a") as f:
-                f.write(f"Hash Stored: {hs}\n")
+        
+        file = open("SimHashLog.txt", "a")
+        if sim_hash(PREVIOUS_HASH, tokens):
+            file.write(f"{resp.raw_response.url} : Page Similar\n")
+            file.close()
+            return found_links
+        file.write(f"{resp.raw_response.url} : Page Not Similar\n")
+        file.close()
             
-            tokens = tokenizer(normalized_text)  # tokenize the current page
-            unique_words = set(tokens)
 
-            # TODO: use simhashing to figure out if a page is low content
-            if len(tokens) < 25:  # if the page is empty/low content
-                return found_links
-            if (len(unique_words) / len(tokens)) > 0.6:  # stop if there are very few unique words
-                return found_links
-
-            update_freq(tokens)  # update the token frequency dictionary
-            update_longest_page(normalized_text, resp.raw_response.url)  # update the longest page found
-            for soup_url in soup.find_all('a'):
-                link = soup_url.get('href')
-                if link not in found_links:
-                    found_links.append(link)
-
-        cur.close()
+        update_freq(tokens)  # update the token frequency dictionary
+        update_longest_page(normalized_text, resp.raw_response.url)  # update the longest page found
+        for soup_url in soup.find_all('a'):
+            link = soup_url.get('href')
+            if link not in found_links:
+                found_links.append(link)
+                    
     return found_links
 
 
-#SCRAPER FUNCTIONS----------------------------------------------------------------
+# SCRAPER FUNCTIONS ----------------------------------------------------------------------------------------------------------
 
 def tokenizer(content, allow_stop_words=False) -> list:
     #tokenizer for page content
@@ -155,8 +110,8 @@ def update_freq(tokens) -> None:
             FREQ_DICT[token] = 1
 
     with open('top50.txt', 'w') as f:  # as words are added to the dictionary, re-evaluate the 50 words encountered most frequently while crawling; save this info to a separate txt file in case of server crashes/bugs crashing the program
+        f.write("Top 50 Words:\n")
         items = sorted(FREQ_DICT.items(), key = lambda token: token[1], reverse = True)[0:50]
-        f.write("Top 50 Words:")
         for word in items:
             try:
                 f.write(f"{word[0]}: {word[1]}\n")
@@ -176,6 +131,128 @@ def update_longest_page(content, page) -> None:
 
     with open('longest.txt', 'w') as f:  # re-evaluate the longest page encountered by the crawler as new pages are iterated over; save this info to a separate txt file in case of server crashes/bugs crashing the program
         f.write(f"Longest page: {LONGEST_PAGE[0]}\nLength: {LONGEST_PAGE[1]}")
+
+# SAME PAGE CHECK ----------------------------------------------------------------------------------------------------------
+
+def check_db(text: str, url) -> bool:
+    """
+    check if current page is an exact duplicate of other pages already crawled over
+    """
+    
+    hash = hashlib.sha256(text.encode()).hexdigest()  # generate the sha256 hash of the given text
+    file = open('hashes.txt', 'a')  # open the txt file that the hashes will be written into
+    # create a connection to the database 'hashes.db' (creates the db if it doesn't already exist)
+    con = sqlite3.connect("hashes.db")
+    # Create a db cursor to execute SQL statements and fetch results from SQL queries
+    cur = con.cursor()
+    # check if the 'hashes' table already exists in the 'hashes' db
+    res = cur.execute("SELECT name FROM sqlite_master WHERE name='hashes'")
+    res = res.fetchone()  # if res == anything other than None, then it exists in db
+    if not res:  # if it doesn't exist, create the 'hashes' table
+        cur.execute(" CREATE TABLE hashes (hash STR) ")  # table created with one column named 'hash'
+        con.commit()  # commit the CREATE TABLE transaction to the db
+    # check if hash already in db
+    res = cur.execute("SELECT * FROM hashes WHERE hash = ?", (hash,))
+    res = res.fetchone()  # if res == anything other than None, it was found in the table
+    if res:  # since it's in db, return False: this page is a duplicate of one already crawled over
+        file.write(f"Duplicate -- url: {url} | hash: {hash}")
+        file.close()
+        return True
+    # otherwise, add its hash to the table
+    cur.execute(f"""INSERT INTO hashes(hash) VALUES(?)""", (hash))
+    con.commit()  # commit the INSERT transaction to db
+
+    # now get that hash from the table and wite it into 'hashes.txt'
+    file.write(f"New Page -- url: {url} | hash: {hash}")
+    file.close()
+    
+    return False
+
+
+# SIMHASHING DONE BELOW ----------------------------------------------------------------------------------------------------------
+
+'''
+Member Variables:
+tokens
+
+'''
+
+def string_to_binary_hash(string):
+    hash_value = hashlib.sha256(string.encode()).hexdigest()
+    binary_hash = bin(int(hash_value, 16))[2:] # remove header of binary string
+    binary_hash = binary_hash[:10].zfill(10)
+    return binary_hash
+
+def list_to_binary_hash(string_list):
+    binary_hashes = []
+    for string in string_list:
+        binary_hash = string_to_binary_hash(string)
+        binary_hashes.append(binary_hash)
+    return binary_hashes
+
+def computeWordFrequencies(tokens) -> dict :  # return frequencies of file's tokens
+    instances = {} # dict of frequencies of words in the given text file
+    for token in tokens:
+        if token not in instances:
+            instances[token] = 0
+        instances[token] += 1
+    return instances
+
+def count_digit(token_freq):
+    data_for_fingerprint = []
+    for x in range(10):
+        bit_sum = 0
+        for key, value in token_freq.items():
+            if get_digit(int(key), x) > 0:
+                bit_sum += value
+            else:
+                bit_sum -= value
+        data_for_fingerprint.append(bit_sum)
+    return data_for_fingerprint
+
+# The // performs integer division by a power of ten to move the digit to the ones position, 
+# then the % gets the remainder after division by 10.
+# Note that the numbering in this scheme uses zero-indexing and starts from the right side of the number.
+def get_digit(number, n):
+    return number // 10**n % 10
+
+def generate_fingerprint(list):
+    fingerprint = []
+    for value in list:
+        if value > 0:
+            fingerprint.append(1)
+        else:
+            fingerprint.append(0)
+    return fingerprint
+
+#if its similar return true, else return false
+def compare_fingerprint(previous_hash, new_fingerprint):
+    #see how many bits are the same from the first fingerprint to the second
+    similarity_score = 0
+    threshold = 0.85
+    for x in range(10):
+        if previous_hash[x] == new_fingerprint[x]:
+            similarity_score += 1
+    if similarity_score/10 > threshold:
+        return True
+    return False
+
+
+#handles calendar webpages/ blogs/ events
+#values of the binary are reversed, that means the data originally is 1-2-3-4-5, but our fingerprint is stored as 5-4-3-2-1
+#if you want to access these values, start from the beginning of the fingerprint (but know that that's the last hash)
+def sim_hash(previous_hash, tokens):
+    global PREVIOUS_HASH
+
+    hash_tokens = list_to_binary_hash(tokens)
+    token_freq = computeWordFrequencies(hash_tokens)
+    #print(token_freq)
+    fingerprint = generate_fingerprint(count_digit(token_freq))
+    if PREVIOUS_HASH:
+        if compare_fingerprint(previous_hash, fingerprint) == True:
+            return True
+    PREVIOUS_HASH = fingerprint
+    return False
 
 
 # IS_VALID GLOBAL VARIABLES AND HELPERS BELOW ----------------------------------------------------------------------------------------------------------
@@ -244,10 +321,11 @@ def add_to_subdomain_count(parsed_url, subdomain_count) -> bool:
                 subdomain_count[hostname] += 1
             else:
                 subdomain_count[hostname] = 1
+            subdomain_count.pop("ics.uci.edu", None) #scuffed ass solution but its okay
             with open('subdomains.txt', 'w') as f:  # note the subdomains crawled over and how often they were encountered; save this info to a separate txt file in case of server crashes/bugs crashing the program
                 f.write(f"# of subdomains: {len(subdomain_count)}\n")
                 for sd, freq in subdomain_count.items():
-                    f.write(f"{sd}: {freq}\n")
+                    f.write(f"\t{sd}: {freq}\n")
             return True
     return False
 
