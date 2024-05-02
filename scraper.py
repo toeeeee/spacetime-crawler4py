@@ -44,7 +44,8 @@ def extract_next_links(url, resp):
         plain_text = plain_text.strip().lower()  # remove leading & trailing whitespace, & lowercase all chars
         normalized_text = re.sub(r'\s+', ' ', plain_text)  # sequences of whitespace replaced with one space
         
-        is_duplicate = check_db(normalized_text, resp.raw_response.url)  # do same-page check
+        # do same-page check
+        is_duplicate = check_db(normalized_text, resp.raw_response.url)
         if is_duplicate: # if True, then this page is a duplicate of one already crawled over
             return []
         # else, not a duplicate: continue processing the page
@@ -134,7 +135,7 @@ def update_longest_page(content, page) -> None:
 
 # SAME PAGE CHECK ----------------------------------------------------------------------------------------------------------
 
-def check_db(text: str, url) -> bool:
+def check_db(text: str, url: str) -> bool:
     """
     check if current page is an exact duplicate of other pages already crawled over
     """
@@ -151,20 +152,25 @@ def check_db(text: str, url) -> bool:
     if not res:  # if it doesn't exist, create the 'hashes' table
         cur.execute(" CREATE TABLE hashes (hash STR) ")  # table created with one column named 'hash'
         con.commit()  # commit the CREATE TABLE transaction to the db
+    
     # check if hash already in db
     res = cur.execute("SELECT * FROM hashes WHERE hash = ?", (hash,))
     res = res.fetchone()  # if res == anything other than None, it was found in the table
-    if res:  # since it's in db, return False: this page is a duplicate of one already crawled over
-        file.write(f"Duplicate -- url: {url} | hash: {hash}")
+    if res:  # since it's in db, return True: this page is a duplicate of one already crawled over
+        file.write(f"Duplicate -- url: {url} | hash: {hash}\n")
         file.close()
+        cur.close()
+        con.close()
         return True
     # otherwise, add its hash to the table
-    cur.execute(f"""INSERT INTO hashes(hash) VALUES(?)""", (hash))
+    cur.execute(f"""INSERT INTO hashes(hash) VALUES(?)""", (hash,))
     con.commit()  # commit the INSERT transaction to db
 
-    # now get that hash from the table and wite it into 'hashes.txt'
-    file.write(f"New Page -- url: {url} | hash: {hash}")
+    # now wite it into 'hashes.txt'
+    file.write(f"Unique -- url: {url} | hash: {hash}\n")
     file.close()
+    cur.close()
+    con.close()
     
     return False
 
