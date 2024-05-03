@@ -1,0 +1,183 @@
+REPORT:
+
+# of unique pages: 8147
+
+Longest page: https://www.ics.uci.edu/~wjohnson/BIDA/Ch8/prioriterates.txt
+Length: 120029 tokens
+
+Top 50 Words:
+research: 18954
+software: 11928
+computer: 11843
+student: 10106
+information: 9559
+uci: 8848
+engineering: 8546
+students: 8170
+will: 7927
+may: 7842
+informatics: 7745
+graduate: 7590
+september: 7556
+undergraduate: 7463
+science: 7206
+data: 7109
+design: 6791
+can: 6618
+october: 6527
+june: 6050
+july: 6012
+news: 5967
+department: 5865
+november: 5783
+ph: 5750
+march: 5534
+projects: 5448
+ics: 540
+december: 5405
+april: 5358
+people: 5331
+february: 5297
+january: 5270
+august: 5230
+course: 5163
+courses: 5149
+support: 5004
+systems: 4780
+books: 4630
+policies: 4502
+new: 4474
+profiles: 4391
+university: 4309
+events: 4299
+process: 4292
+time: 4231
+past: 4091
+computing: 4050
+application: 3999
+pm: 3958
+
+# of subdomains: 121
+    mds.ics.uci.edu: 22
+    statconsulting.ics.uci.edu: 1
+    calendar.ics.uci.edu: 1
+    intranet.ics.uci.edu: 2
+    dgillen.ics.uci.edu: 46
+    mcs.ics.uci.edu: 33
+    mswe.ics.uci.edu: 17
+    mhcid.ics.uci.edu: 23
+    tippersweb.ics.uci.edu: 6
+    coronavirustwittermap.ics.uci.edu: 2
+    malek.ics.uci.edu: 3
+    seal.ics.uci.edu: 3
+    informatics.ics.uci.edu: 3
+    mse.ics.uci.edu: 2
+    hai.ics.uci.edu: 4
+    jgarcia.ics.uci.edu: 10
+    code.ics.uci.edu: 23
+    hack.ics.uci.edu: 1
+    student-council.ics.uci.edu: 1
+    ics.ics.uci.edu: 467
+    cwicsocal18.ics.uci.edu: 294
+    sprout.ics.uci.edu: 3
+    transformativeplay.ics.uci.edu: 88
+    evoke.ics.uci.edu: 10
+    earablegames.ics.uci.edu: 8
+    hana.ics.uci.edu: 3
+    checkmate.ics.uci.edu: 2
+    elms.ics.uci.edu: 1
+    support.ics.uci.edu: 2
+    password.ics.uci.edu: 1
+    tutors.ics.uci.edu: 1
+    unite.ics.uci.edu: 10
+    cml.ics.uci.edu: 55
+    archive.ics.uci.edu: 7
+    vision.ics.uci.edu: 9
+    create.ics.uci.edu: 7
+    plrg.ics.uci.edu: 136
+    mdogucu.ics.uci.edu: 1
+    ngs.ics.uci.edu: 937
+    nalini.ics.uci.edu: 9
+    cbcl.ics.uci.edu: 3
+    isg.ics.uci.edu: 237
+    cert.ics.uci.edu: 4
+    luci.ics.uci.edu: 7
+    fr.ics.uci.edu: 5
+    aiclub.ics.uci.edu: 1
+    futurehealth.ics.uci.edu: 5
+    -db.ics.uci.edu: 29
+    iasl.ics.uci.edu: 22
+    studentcouncil.ics.uci.edu: 2
+    sconce.ics.uci.edu: 1
+    graphics.ics.uci.edu: 12
+    chenli.ics.uci.edu: 25
+    cloudberry.ics.uci.edu: 3
+    asterix.ics.uci.edu: 8
+ flamingo.ics.uci.edu: 15
+    asterixdb.ics.uci.edu: 2
+    psearch.ics.uci.edu: 3
+    jujube.ics.uci.edu: 3
+    grape.ics.uci.edu: 90
+    ipubmed.ics.uci.edu: 5
+    hobbes.ics.uci.edu: 2
+    cherry.ics.uci.edu: 1
+    chime.ics.uci.edu: 1
+    tastier.ics.uci.edu: 2
+    dblp.ics.uci.edu: 2
+    sdcl.ics.uci.edu: 124
+    redmiles.ics.uci.edu: 5
+    codeexchange.ics.uci.edu: 3
+    cradl.ics.uci.edu: 20
+    awareness.ics.uci.edu: 1
+    alumni.ics.uci.edu: 5
+    acoi.ics.uci.edu: 59
+    kdd.ics.uci.edu: 1
+    duttgroup.ics.uci.edu: 108
+    xtune.ics.uci.edu: 7
+    satware.ics.uci.edu: 1
+    sourcerer.ics.uci.edu: 2
+    map125.ics.uci.edu: 1
+    cgvw.ics.uci.edu: 1
+    dynamo.ics.uci.edu: 1
+    seraja.ics.uci.edu: 1
+    auge.ics.uci.edu: 2
+    esl.ics.uci.edu: 1
+    mapgrid.ics.uci.edu: 1
+    sherlock.ics.uci.edu: 2
+    dataguard.ics.uci.edu: 1
+    dataprotector.ics.uci.edu: 1
+    i-sensorium.ics.uci.edu: 1
+    tippers.ics.uci.edu: 1
+    mailman.ics.uci.edu: 3
+    hpi.ics.uci.edu: 4
+    accessibility.ics.uci.edu: 1
+    cocoa-krispies.ics.uci.edu: 1
+    halps.ics.uci.edu: 1
+    emj.ics.uci.edu: 59
+    computableplant.ics.uci.edu: 131
+    emj-pc.ics.uci.edu: 1
+    omni.ics.uci.edu: 1
+    sli.ics.uci.edu: 1012
+    graphmod.ics.uci.edu: 1
+    archive-beta.ics.uci.edu: 2
+    iki.ics.uci.edu: 1
+    yarra.ics.uci.edu: 1
+    cyberclub.ics.uci.edu: 1
+    -netra.ics.uci.edu: 4
+    pasteur.ics.uci.edu: 2
+    ugradforms.ics.uci.edu: 1
+    mondego.ics.uci.edu: 13
+    dejavu.ics.uci.edu: 1
+    se.ics.uci.edu: 1
+    frost.ics.uci.edu: 1
+    perennialpolycultures.ics.uci.edu: 1
+    tad.ics.uci.edu: 1
+    informatics.mt-live.ics.uci.edu: 1
+     codeexchange.ics.uci.edu: 1
+    riscit.ics.uci.edu: 1
+    stairs.ics.uci.edu: 1
+    metaviz.ics.uci.edu: 1
+    keys.ics.uci.edu: 1
+    swiki.ics.uci.edu: 1
+
+End of report.
